@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:OpenGISToolbox.ViewModels"
+             xmlns:m="using:OpenGISToolbox.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="600"
+             x:Class="OpenGISToolbox.Views.ToolExecutionView"
+             x:DataType="vm:ToolExecutionViewModel">
+
+    <Design.DataContext>
+        <vm:ToolExecutionViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto,Auto,Auto">
+        <!-- Tool Header -->
+        <StackPanel Grid.Row="0" Margin="12" IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock Text="{Binding SelectedTool.Name}" FontSize="20" FontWeight="Bold" Margin="0,0,0,4" />
+            <TextBlock Text="{Binding SelectedTool.Description}" TextWrapping="Wrap" Foreground="Gray" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="0" Text="Select a tool to begin"
+                   IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNull}}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Foreground="Gray" FontSize="16" Margin="12" />
+
+        <!-- Parameters -->
+        <ScrollViewer Grid.Row="1" Margin="12,0"
+                      IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ItemsControl ItemsSource="{Binding Parameters}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ToolParameterViewModel">
+                        <StackPanel Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                                <TextBlock Text=" *" Foreground="Red" IsVisible="{Binding Required}" />
+                            </StackPanel>
+
+                            <!-- InputFile / OutputFile -->
+                            <Grid ColumnDefinitions="*,Auto"
+                                  IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.InputFile}}">
+                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="Select file..." />
+                                <Button Grid.Column="1" Content="Browse" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto"
+                                  IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.OutputFile}}">
+                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="Select output file..." />
+                                <Button Grid.Column="1" Content="Browse" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
+                            </Grid>
+
+                            <!-- Number -->
+                            <TextBox Text="{Binding Value}" Watermark="Enter number..."
+                                     IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Number}}" />
+
+                            <!-- Integer -->
+                            <TextBox Text="{Binding Value}" Watermark="Enter integer..."
+                                     IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Integer}}" />
+
+                            <!-- Text -->
+                            <TextBox Text="{Binding Value}" Watermark="Enter text..."
+                                     IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Text}}" />
+
+                            <!-- Dropdown -->
+                            <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding Value}"
+                                      IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Dropdown}}"
+                                      HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="12,8"
+                    IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <Button Content="Execute" Command="{Binding ExecuteCommand}" Classes="accent" MinWidth="100" />
+            <Button Content="Clear Log" Command="{Binding ClearLogCommand}" Margin="8,0,0,0" />
+        </StackPanel>
+
+        <!-- Log Output -->
+        <TextBox Grid.Row="3" Text="{Binding LogOutput}" IsReadOnly="True"
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 Height="150" Margin="12,0,12,8"
+                 Watermark="Log output..."
+                 IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+        <!-- Result -->
+        <Border Grid.Row="4" Margin="12,0,12,12" Padding="8" CornerRadius="4"
+                IsVisible="{Binding HasResult}">
+            <TextBlock Text="{Binding ResultMessage}" TextWrapping="Wrap" />
+        </Border>
+    </Grid>
+</UserControl>
