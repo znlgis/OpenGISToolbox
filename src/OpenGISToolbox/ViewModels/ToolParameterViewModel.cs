@@ -72,7 +72,7 @@ public partial class ToolParameterViewModel : ViewModelBase
                 options.FileTypeChoices = fileTypes;
                 var firstPattern = fileTypes[0].Patterns?.FirstOrDefault();
                 if (firstPattern != null)
-                    options.DefaultExtension = firstPattern.TrimStart('*', '.');
+                    options.DefaultExtension = firstPattern.TrimStart('*').TrimStart('.');
             }
 
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(options);
