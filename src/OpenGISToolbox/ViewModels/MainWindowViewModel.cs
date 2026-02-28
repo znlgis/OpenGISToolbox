@@ -1,6 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using OpenGISToolbox.Models;
 using OpenGISToolbox.Services;
 
@@ -39,6 +43,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var tool in allTools)
             FilteredTools.Add(tool);
+
+        LanguageManager.Instance.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        foreach (var cat in Categories)
+        {
+            cat.DisplayName = GetCategoryDisplayName(cat.Category);
+            cat.RefreshToolCountDisplay();
+        }
     }
 
     partial void OnSelectedCategoryItemChanged(ToolCategoryItem? value)
@@ -55,25 +70,72 @@ public partial class MainWindowViewModel : ViewModelBase
         ExecutionViewModel.SelectedTool = value;
     }
 
-    private static string GetCategoryDisplayName(ToolCategory category) => category switch
+    [RelayCommand]
+    private void SwitchLanguage()
     {
-        ToolCategory.Conversion => "格式转换 (Conversion)",
-        ToolCategory.Geometry => "几何处理 (Geometry)",
-        ToolCategory.Validation => "几何验证 (Validation)",
-        ToolCategory.Coordinate => "坐标转换 (Coordinate)",
-        ToolCategory.Analysis => "空间分析 (Analysis)",
-        ToolCategory.Utility => "实用工具 (Utility)",
-        ToolCategory.Raster => "栅格处理 (Raster)",
-        ToolCategory.RemoteSensing => "遥感 (Remote Sensing)",
-        ToolCategory.GPS => "GPS",
-        ToolCategory.Geocoding => "地理编码 (Geocoding)",
+        var lang = LanguageManager.Instance.CurrentLanguage == "en" ? "zh" : "en";
+        LanguageManager.Instance.SwitchLanguage(lang);
+    }
+
+    private static string GetCategoryDisplayName(ToolCategory category)
+    {
+        var app = Application.Current;
+        if (app != null && app.TryGetResource(GetCategoryResourceKey(category), app.ActualThemeVariant, out var value) && value is string s)
+            return s;
+
+        return category.ToString();
+    }
+
+    private static string GetCategoryResourceKey(ToolCategory category) => category switch
+    {
+        ToolCategory.Conversion => "CategoryConversion",
+        ToolCategory.Geometry => "CategoryGeometry",
+        ToolCategory.Validation => "CategoryValidation",
+        ToolCategory.Coordinate => "CategoryCoordinate",
+        ToolCategory.Analysis => "CategoryAnalysis",
+        ToolCategory.Utility => "CategoryUtility",
+        ToolCategory.Raster => "CategoryRaster",
+        ToolCategory.RemoteSensing => "CategoryRemoteSensing",
+        ToolCategory.GPS => "CategoryGPS",
+        ToolCategory.Geocoding => "CategoryGeocoding",
         _ => category.ToString()
     };
 }
 
-public class ToolCategoryItem
+public class ToolCategoryItem : INotifyPropertyChanged
 {
+    private string _displayName = string.Empty;
+
     public ToolCategory Category { get; set; }
-    public string DisplayName { get; set; } = string.Empty;
+
+    public string DisplayName
+    {
+        get => _displayName;
+        set
+        {
+            if (_displayName == value) return;
+            _displayName = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
+        }
+    }
+
     public int ToolCount { get; set; }
+
+    public string ToolCountDisplay
+    {
+        get
+        {
+            var app = Application.Current;
+            if (app != null && app.TryGetResource("ToolsFormat", app.ActualThemeVariant, out var value) && value is string fmt)
+                return string.Format(fmt, ToolCount);
+            return $"{ToolCount} tools";
+        }
+    }
+
+    public void RefreshToolCountDisplay()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ToolCountDisplay)));
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

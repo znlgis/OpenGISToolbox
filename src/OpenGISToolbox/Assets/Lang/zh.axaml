@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="using:System">
+
+    <!-- MainWindow -->
+    <system:String x:Key="WindowTitle">OpenGIS 工具箱</system:String>
+    <system:String x:Key="ToolCategories">工具分类</system:String>
+    <system:String x:Key="ToolsFormat">{0} 个工具</system:String>
+    <system:String x:Key="Tools">工具列表</system:String>
+
+    <!-- ToolExecutionView -->
+    <system:String x:Key="SelectToolHint">请选择一个工具</system:String>
+    <system:String x:Key="Browse">浏览</system:String>
+    <system:String x:Key="Execute">执行</system:String>
+    <system:String x:Key="ClearLog">清除日志</system:String>
+    <system:String x:Key="SelectFile">选择文件...</system:String>
+    <system:String x:Key="SelectOutputFile">选择输出文件...</system:String>
+    <system:String x:Key="EnterNumber">输入数字...</system:String>
+    <system:String x:Key="EnterInteger">输入整数...</system:String>
+    <system:String x:Key="EnterText">输入文本...</system:String>
+    <system:String x:Key="LogOutput">日志输出...</system:String>
+
+    <!-- Language toggle -->
+    <system:String x:Key="LanguageLabel">English</system:String>
+
+    <!-- Category names -->
+    <system:String x:Key="CategoryConversion">格式转换</system:String>
+    <system:String x:Key="CategoryGeometry">几何处理</system:String>
+    <system:String x:Key="CategoryValidation">几何验证</system:String>
+    <system:String x:Key="CategoryCoordinate">坐标转换</system:String>
+    <system:String x:Key="CategoryAnalysis">空间分析</system:String>
+    <system:String x:Key="CategoryUtility">实用工具</system:String>
+    <system:String x:Key="CategoryRaster">栅格处理</system:String>
+    <system:String x:Key="CategoryRemoteSensing">遥感</system:String>
+    <system:String x:Key="CategoryGPS">GPS</system:String>
+    <system:String x:Key="CategoryGeocoding">地理编码</system:String>
+
+    <!-- File picker titles -->
+    <system:String x:Key="SelectInputFile">选择输入文件</system:String>
+    <system:String x:Key="SelectOutputFilePicker">选择输出文件</system:String>
+
+</ResourceDictionary>

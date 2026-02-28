@@ -19,7 +19,7 @@
             <TextBlock Text="{Binding SelectedTool.Description}" TextWrapping="Wrap" Foreground="Gray" />
         </StackPanel>
 
-        <TextBlock Grid.Row="0" Text="Select a tool to begin"
+        <TextBlock Grid.Row="0" Text="{DynamicResource SelectToolHint}"
                    IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNull}}"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    Foreground="Gray" FontSize="16" Margin="12" />
@@ -39,25 +39,25 @@
                             <!-- InputFile / OutputFile -->
                             <Grid ColumnDefinitions="*,Auto"
                                   IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.InputFile}}">
-                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="Select file..." />
-                                <Button Grid.Column="1" Content="Browse" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
+                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="{DynamicResource SelectFile}" />
+                                <Button Grid.Column="1" Content="{DynamicResource Browse}" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto"
                                   IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.OutputFile}}">
-                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="Select output file..." />
-                                <Button Grid.Column="1" Content="Browse" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
+                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="{DynamicResource SelectOutputFile}" />
+                                <Button Grid.Column="1" Content="{DynamicResource Browse}" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
                             </Grid>
 
                             <!-- Number -->
-                            <TextBox Text="{Binding Value}" Watermark="Enter number..."
+                            <TextBox Text="{Binding Value}" Watermark="{DynamicResource EnterNumber}"
                                      IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Number}}" />
 
                             <!-- Integer -->
-                            <TextBox Text="{Binding Value}" Watermark="Enter integer..."
+                            <TextBox Text="{Binding Value}" Watermark="{DynamicResource EnterInteger}"
                                      IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Integer}}" />
 
                             <!-- Text -->
-                            <TextBox Text="{Binding Value}" Watermark="Enter text..."
+                            <TextBox Text="{Binding Value}" Watermark="{DynamicResource EnterText}"
                                      IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.Text}}" />
 
                             <!-- Dropdown -->
@@ -73,15 +73,15 @@
         <!-- Buttons -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="12,8"
                     IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}">
-            <Button Content="Execute" Command="{Binding ExecuteCommand}" Classes="accent" MinWidth="100" />
-            <Button Content="Clear Log" Command="{Binding ClearLogCommand}" Margin="8,0,0,0" />
+            <Button Content="{DynamicResource Execute}" Command="{Binding ExecuteCommand}" Classes="accent" MinWidth="100" />
+            <Button Content="{DynamicResource ClearLog}" Command="{Binding ClearLogCommand}" Margin="8,0,0,0" />
         </StackPanel>
 
         <!-- Log Output -->
         <TextBox Grid.Row="3" Text="{Binding LogOutput}" IsReadOnly="True"
                  AcceptsReturn="True" TextWrapping="Wrap"
                  Height="150" Margin="12,0,12,8"
-                 Watermark="Log output..."
+                 Watermark="{DynamicResource LogOutput}"
                  IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
         <!-- Result -->

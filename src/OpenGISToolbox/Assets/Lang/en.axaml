@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="using:System">
+
+    <!-- MainWindow -->
+    <system:String x:Key="WindowTitle">OpenGIS Toolbox</system:String>
+    <system:String x:Key="ToolCategories">Tool Categories</system:String>
+    <system:String x:Key="ToolsFormat">{0} tools</system:String>
+    <system:String x:Key="Tools">Tools</system:String>
+
+    <!-- ToolExecutionView -->
+    <system:String x:Key="SelectToolHint">Select a tool to begin</system:String>
+    <system:String x:Key="Browse">Browse</system:String>
+    <system:String x:Key="Execute">Execute</system:String>
+    <system:String x:Key="ClearLog">Clear Log</system:String>
+    <system:String x:Key="SelectFile">Select file...</system:String>
+    <system:String x:Key="SelectOutputFile">Select output file...</system:String>
+    <system:String x:Key="EnterNumber">Enter number...</system:String>
+    <system:String x:Key="EnterInteger">Enter integer...</system:String>
+    <system:String x:Key="EnterText">Enter text...</system:String>
+    <system:String x:Key="LogOutput">Log output...</system:String>
+
+    <!-- Language toggle -->
+    <system:String x:Key="LanguageLabel">中文</system:String>
+
+    <!-- Category names -->
+    <system:String x:Key="CategoryConversion">Conversion</system:String>
+    <system:String x:Key="CategoryGeometry">Geometry</system:String>
+    <system:String x:Key="CategoryValidation">Validation</system:String>
+    <system:String x:Key="CategoryCoordinate">Coordinate</system:String>
+    <system:String x:Key="CategoryAnalysis">Analysis</system:String>
+    <system:String x:Key="CategoryUtility">Utility</system:String>
+    <system:String x:Key="CategoryRaster">Raster</system:String>
+    <system:String x:Key="CategoryRemoteSensing">Remote Sensing</system:String>
+    <system:String x:Key="CategoryGPS">GPS</system:String>
+    <system:String x:Key="CategoryGeocoding">Geocoding</system:String>
+
+    <!-- File picker titles -->
+    <system:String x:Key="SelectInputFile">Select Input File</system:String>
+    <system:String x:Key="SelectOutputFilePicker">Select Output File</system:String>
+
+</ResourceDictionary>
