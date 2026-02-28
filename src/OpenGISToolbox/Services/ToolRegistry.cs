@@ -1451,6 +1451,8 @@ public static class ToolRegistry
                             groupLayer.AddFeature(feature.Clone());
 
                         var safeName = string.Join("_", group.Key.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+                        if (string.IsNullOrWhiteSpace(safeName))
+                            safeName = $"group_{count}";
                         var outputPath = Path.Combine(outputFolder, $"{safeName}.shp");
 
                         progress?.Report($"Writing group '{group.Key}' ({groupLayer.GetFeatureCount()} features)...");
