@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Markup.Xaml.Styling;
@@ -10,7 +10,7 @@ public class LanguageManager : INotifyPropertyChanged
     private static readonly Lazy<LanguageManager> _instance = new(() => new LanguageManager());
     public static LanguageManager Instance => _instance.Value;
 
-    private string _currentLanguage = "en";
+    private string _currentLanguage = string.Empty;
     private ResourceInclude? _currentResource;
 
     public event PropertyChangedEventHandler? PropertyChanged;
