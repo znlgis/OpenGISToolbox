@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OpenGISToolbox/OpenGISToolbox.csproj" />
+  </Folder>
+</Solution>
