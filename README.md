@@ -15,11 +15,11 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 ### Features
 
 - 🖥️ **Cross-Platform Desktop App**: Runs on Windows, Linux, and macOS via Avalonia UI
-- 🔄 **Format Conversion**: Convert between Shapefile, GeoJSON, KML, GeoPackage, and DXF formats
-- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Convex Hull, Centroid, and Simplify operations
+- 🔄 **Format Conversion**: Convert between Shapefile, GeoJSON, KML, GeoPackage, DXF, FileGDB, CSV, and PostGIS formats
+- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Split, Clip, and Spatial Join operations
 - ✅ **Geometry Validation**: Check geometry validity with detailed error reporting
-- 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems
-- 📏 **Spatial Analysis**: Calculate area and length of geometries
+- 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems, with batch reprojection support
+- 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, and Attribute Query
 - 📦 **Utility Tools**: ZIP compression and extraction
 - 🎯 **MVVM Architecture**: Clean separation of concerns using CommunityToolkit.Mvvm
 
@@ -86,7 +86,7 @@ OpenGISToolbox/
 
 The following table shows the mapping between NextGIS Toolbox features and the current implementation status.
 
-#### ✅ Implemented Tools (23 tools)
+#### ✅ Implemented Tools (36 tools)
 
 | # | Category | Tool | NextGIS Equivalent | Status |
 |---|----------|------|--------------------|--------|
@@ -113,6 +113,19 @@ The following table shows the mapping between NextGIS Toolbox features and the c
 | 21 | Analysis | Calculate Length | Spatial analysis | ✅ Done |
 | 22 | Utility | ZIP Compress | Data packaging | ✅ Done |
 | 23 | Utility | ZIP Extract | Data extraction | ✅ Done |
+| 24 | Conversion | FileGDB → SHP | Vector format conversion | ✅ Done |
+| 25 | Conversion | SHP → FileGDB | Vector format conversion | ✅ Done |
+| 26 | Conversion | CSV → Vector | Table to vector | ✅ Done |
+| 27 | Conversion | PostGIS Import | Database operations | ✅ Done |
+| 28 | Conversion | PostGIS Export | Database operations | ✅ Done |
+| 29 | Geometry | Fix Geometries | Check and fix vector geometries | ✅ Done |
+| 30 | Geometry | Merge Layers | Merge vector layers | ✅ Done |
+| 31 | Geometry | Split Layer | Split vector layers | ✅ Done |
+| 32 | Geometry | Clip | Clip layer by polygon | ✅ Done |
+| 33 | Geometry | Spatial Join | Join by location | ✅ Done |
+| 34 | Coordinate | Batch Reproject | Reproject coordinates (batch) | ✅ Done |
+| 35 | Analysis | Spatial Filter | Filter by spatial extent | ✅ Done |
+| 36 | Analysis | Attribute Query | Filter by attributes | ✅ Done |
 
 #### 🔲 Planned / Not Yet Implemented
 
@@ -120,18 +133,7 @@ The following NextGIS Toolbox features are planned for future implementation:
 
 | Category | Planned Tool | NextGIS Equivalent | Priority |
 |----------|-------------|-------------------|----------|
-| Conversion | FileGDB ↔ SHP | Vector format conversion | High |
-| Conversion | PostGIS import/export | Database operations | Medium |
-| Conversion | CSV/TXT → Vector | Table to vector | High |
-| Geometry | Fix Geometries | Check and fix vector geometries (QGIS) | High |
-| Geometry | Merge Layers | Merge vector layers | High |
-| Geometry | Split Layer | Split vector layers | Medium |
-| Geometry | Spatial Join | Join by location | High |
-| Geometry | Clip | Clip layer by extent/polygon | High |
 | Geometry | Central Lines | Central lines of polygons | Low |
-| Coordinate | Batch Reproject Files | Reproject coordinates (batch) | Medium |
-| Analysis | Spatial Filter | Filter by spatial extent | Medium |
-| Analysis | Attribute Query | Filter by attributes | Medium |
 | Raster | Raster Format Conversion | Raster operations | Medium |
 | Raster | Raster Calculator | GRASS/GDAL raster calculator | Low |
 | Remote Sensing | Satellite Image Download | Sentinel-2/Landsat | Low |
@@ -174,11 +176,11 @@ Contributions are welcome! To add a new tool:
 ### 特性
 
 - 🖥️ **跨平台桌面应用**：通过 Avalonia UI 在 Windows、Linux 和 macOS 上运行
-- 🔄 **格式转换**：在 Shapefile、GeoJSON、KML、GeoPackage 和 DXF 格式之间转换
-- 📐 **几何处理**：缓冲区、合并、交集、差集、凸包、质心和简化操作
+- 🔄 **格式转换**：在 Shapefile、GeoJSON、KML、GeoPackage、DXF、FileGDB、CSV 和 PostGIS 格式之间转换
+- 📐 **几何处理**：缓冲区、合并、交集、差集、凸包、质心、简化、修复几何、合并图层、拆分图层、裁剪和空间连接操作
 - ✅ **几何验证**：检查几何有效性并提供详细错误报告
-- 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标
-- 📏 **空间分析**：计算几何对象的面积和长度
+- 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标，支持批量重投影
+- 📏 **空间分析**：计算几何对象的面积和长度、空间过滤和属性查询
 - 📦 **实用工具**：ZIP 压缩和解压
 - 🎯 **MVVM 架构**：使用 CommunityToolkit.Mvvm 实现清晰的关注点分离
 
@@ -245,7 +247,7 @@ OpenGISToolbox/
 
 下表展示了 NextGIS Toolbox 功能与当前实现状态的对应关系。
 
-#### ✅ 已实现工具（23个）
+#### ✅ 已实现工具（36个）
 
 | # | 类别 | 工具 | NextGIS 对应功能 | 状态 |
 |---|------|------|-----------------|------|
@@ -272,6 +274,19 @@ OpenGISToolbox/
 | 21 | 空间分析 | 计算长度 | 空间分析 | ✅ 已完成 |
 | 22 | 实用工具 | ZIP 压缩 | 数据打包 | ✅ 已完成 |
 | 23 | 实用工具 | ZIP 解压 | 数据解压 | ✅ 已完成 |
+| 24 | 格式转换 | FileGDB → SHP | 矢量格式转换 | ✅ 已完成 |
+| 25 | 格式转换 | SHP → FileGDB | 矢量格式转换 | ✅ 已完成 |
+| 26 | 格式转换 | CSV → 矢量 | 表格转矢量 | ✅ 已完成 |
+| 27 | 格式转换 | PostGIS 导入 | 数据库操作 | ✅ 已完成 |
+| 28 | 格式转换 | PostGIS 导出 | 数据库操作 | ✅ 已完成 |
+| 29 | 几何处理 | 修复几何 | 检查和修复矢量几何 | ✅ 已完成 |
+| 30 | 几何处理 | 合并图层 | 合并矢量图层 | ✅ 已完成 |
+| 31 | 几何处理 | 拆分图层 | 拆分矢量图层 | ✅ 已完成 |
+| 32 | 几何处理 | 裁剪 | 按多边形裁剪图层 | ✅ 已完成 |
+| 33 | 几何处理 | 空间连接 | 按位置连接 | ✅ 已完成 |
+| 34 | 坐标转换 | 批量重投影 | 坐标重投影（批量）| ✅ 已完成 |
+| 35 | 空间分析 | 空间过滤 | 按空间范围过滤 | ✅ 已完成 |
+| 36 | 空间分析 | 属性查询 | 按属性过滤 | ✅ 已完成 |
 
 #### 🔲 计划中 / 尚未实现
 
@@ -279,18 +294,7 @@ OpenGISToolbox/
 
 | 类别 | 计划工具 | NextGIS 对应功能 | 优先级 |
 |------|---------|-----------------|--------|
-| 格式转换 | FileGDB ↔ SHP | 矢量格式转换 | 高 |
-| 格式转换 | PostGIS 导入/导出 | 数据库操作 | 中 |
-| 格式转换 | CSV/TXT → 矢量 | 表格转矢量 | 高 |
-| 几何处理 | 修复几何 | 检查和修复矢量几何（QGIS）| 高 |
-| 几何处理 | 合并图层 | 合并矢量图层 | 高 |
-| 几何处理 | 拆分图层 | 拆分矢量图层 | 中 |
-| 几何处理 | 空间连接 | 按位置连接 | 高 |
-| 几何处理 | 裁剪 | 按范围/多边形裁剪图层 | 高 |
 | 几何处理 | 中心线 | 多边形中心线 | 低 |
-| 坐标转换 | 批量重投影文件 | 坐标重投影（批量）| 中 |
-| 空间分析 | 空间过滤 | 按空间范围过滤 | 中 |
-| 空间分析 | 属性查询 | 按属性过滤 | 中 |
 | 栅格 | 栅格格式转换 | 栅格操作 | 中 |
 | 栅格 | 栅格计算器 | GRASS/GDAL 栅格计算器 | 低 |
 | 遥感 | 卫星影像下载 | Sentinel-2/Landsat | 低 |
