@@ -16,10 +16,14 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 
 - 🖥️ **Cross-Platform Desktop App**: Runs on Windows, Linux, and macOS via Avalonia UI
 - 🔄 **Format Conversion**: Convert between Shapefile, GeoJSON, KML, GeoPackage, DXF, FileGDB, CSV, and PostGIS formats
-- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Split, Clip, and Spatial Join operations
+- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Split, Clip, Spatial Join, and Central Lines operations
 - ✅ **Geometry Validation**: Check geometry validity with detailed error reporting
 - 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems, with batch reprojection support
 - 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, and Attribute Query
+- 🗺️ **Raster Processing**: Raster format conversion and raster calculator (NDVI, Scale, Offset, Threshold)
+- 🛰️ **Remote Sensing**: Download satellite imagery tiles from public tile services
+- 📍 **GPS Tools**: GPX file processing (extract waypoints/tracks, GPX summary)
+- 🏠 **Geocoding**: Geocode addresses to coordinates using OpenStreetMap Nominatim
 - 📦 **Utility Tools**: ZIP compression and extraction
 - 🎯 **MVVM Architecture**: Clean separation of concerns using CommunityToolkit.Mvvm
 
@@ -86,7 +90,7 @@ OpenGISToolbox/
 
 The following table shows the mapping between NextGIS Toolbox features and the current implementation status.
 
-#### ✅ Implemented Tools (36 tools)
+#### ✅ Implemented Tools (42 tools)
 
 | # | Category | Tool | NextGIS Equivalent | Status |
 |---|----------|------|--------------------|--------|
@@ -126,23 +130,16 @@ The following table shows the mapping between NextGIS Toolbox features and the c
 | 34 | Coordinate | Batch Reproject | Reproject coordinates (batch) | ✅ Done |
 | 35 | Analysis | Spatial Filter | Filter by spatial extent | ✅ Done |
 | 36 | Analysis | Attribute Query | Filter by attributes | ✅ Done |
-
-#### 🔲 Planned / Not Yet Implemented
-
-The following NextGIS Toolbox features are planned for future implementation:
-
-| Category | Planned Tool | NextGIS Equivalent | Priority |
-|----------|-------------|-------------------|----------|
-| Geometry | Central Lines | Central lines of polygons | Low |
-| Raster | Raster Format Conversion | Raster operations | Medium |
-| Raster | Raster Calculator | GRASS/GDAL raster calculator | Low |
-| Remote Sensing | Satellite Image Download | Sentinel-2/Landsat | Low |
-| GPS | GPX Processing | Clip/merge/split GPX files | Low |
-| Geocoding | Geocode Addresses | Geocoding service | Low |
+| 37 | Geometry | Central Lines | Central lines of polygons | ✅ Done |
+| 38 | Raster | Raster Format Conversion | Raster operations | ✅ Done |
+| 39 | Raster | Raster Calculator | GRASS/GDAL raster calculator | ✅ Done |
+| 40 | Remote Sensing | Satellite Image Download | Sentinel-2/Landsat | ✅ Done |
+| 41 | GPS | GPX Processing | Clip/merge/split GPX files | ✅ Done |
+| 42 | Geocoding | Geocode Addresses | Geocoding service | ✅ Done |
 
 ### How It Works
 
-1. **Tool Categories** (left panel): Browse tools by category - Conversion, Geometry, Validation, Coordinate, Analysis, Utility
+1. **Tool Categories** (left panel): Browse tools by category - Conversion, Geometry, Validation, Coordinate, Analysis, Utility, Raster, Remote Sensing, GPS, Geocoding
 2. **Tool List** (middle panel): Select a specific tool from the filtered list
 3. **Execution Panel** (right panel): Configure parameters, execute the tool, and view results
 
@@ -177,10 +174,14 @@ Contributions are welcome! To add a new tool:
 
 - 🖥️ **跨平台桌面应用**：通过 Avalonia UI 在 Windows、Linux 和 macOS 上运行
 - 🔄 **格式转换**：在 Shapefile、GeoJSON、KML、GeoPackage、DXF、FileGDB、CSV 和 PostGIS 格式之间转换
-- 📐 **几何处理**：缓冲区、合并、交集、差集、凸包、质心、简化、修复几何、合并图层、拆分图层、裁剪和空间连接操作
+- 📐 **几何处理**：缓冲区、合并、交集、差集、凸包、质心、简化、修复几何、合并图层、拆分图层、裁剪、空间连接和中心线操作
 - ✅ **几何验证**：检查几何有效性并提供详细错误报告
 - 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标，支持批量重投影
 - 📏 **空间分析**：计算几何对象的面积和长度、空间过滤和属性查询
+- 🗺️ **栅格处理**：栅格格式转换和栅格计算器（NDVI、缩放、偏移、阈值）
+- 🛰️ **遥感**：从公共瓦片服务下载卫星影像
+- 📍 **GPS 工具**：GPX 文件处理（提取航点/轨迹、GPX 摘要）
+- 🏠 **地理编码**：使用 OpenStreetMap Nominatim 将地址编码为坐标
 - 📦 **实用工具**：ZIP 压缩和解压
 - 🎯 **MVVM 架构**：使用 CommunityToolkit.Mvvm 实现清晰的关注点分离
 
@@ -247,7 +248,7 @@ OpenGISToolbox/
 
 下表展示了 NextGIS Toolbox 功能与当前实现状态的对应关系。
 
-#### ✅ 已实现工具（36个）
+#### ✅ 已实现工具（42个）
 
 | # | 类别 | 工具 | NextGIS 对应功能 | 状态 |
 |---|------|------|-----------------|------|
@@ -287,23 +288,16 @@ OpenGISToolbox/
 | 34 | 坐标转换 | 批量重投影 | 坐标重投影（批量）| ✅ 已完成 |
 | 35 | 空间分析 | 空间过滤 | 按空间范围过滤 | ✅ 已完成 |
 | 36 | 空间分析 | 属性查询 | 按属性过滤 | ✅ 已完成 |
-
-#### 🔲 计划中 / 尚未实现
-
-以下 NextGIS Toolbox 功能计划在未来实现：
-
-| 类别 | 计划工具 | NextGIS 对应功能 | 优先级 |
-|------|---------|-----------------|--------|
-| 几何处理 | 中心线 | 多边形中心线 | 低 |
-| 栅格 | 栅格格式转换 | 栅格操作 | 中 |
-| 栅格 | 栅格计算器 | GRASS/GDAL 栅格计算器 | 低 |
-| 遥感 | 卫星影像下载 | Sentinel-2/Landsat | 低 |
-| GPS | GPX 处理 | 裁剪/合并/拆分 GPX 文件 | 低 |
-| 地理编码 | 地址编码 | 地理编码服务 | 低 |
+| 37 | 几何处理 | 中心线 | 多边形中心线 | ✅ 已完成 |
+| 38 | 栅格 | 栅格格式转换 | 栅格操作 | ✅ 已完成 |
+| 39 | 栅格 | 栅格计算器 | GRASS/GDAL 栅格计算器 | ✅ 已完成 |
+| 40 | 遥感 | 卫星影像下载 | Sentinel-2/Landsat | ✅ 已完成 |
+| 41 | GPS | GPX 处理 | 裁剪/合并/拆分 GPX 文件 | ✅ 已完成 |
+| 42 | 地理编码 | 地址编码 | 地理编码服务 | ✅ 已完成 |
 
 ### 使用方法
 
-1. **工具分类**（左侧面板）：按类别浏览工具 - 格式转换、几何处理、几何验证、坐标转换、空间分析、实用工具
+1. **工具分类**（左侧面板）：按类别浏览工具 - 格式转换、几何处理、几何验证、坐标转换、空间分析、实用工具、栅格处理、遥感、GPS、地理编码
 2. **工具列表**（中间面板）：从筛选后的列表中选择具体工具
 3. **执行面板**（右侧面板）：配置参数、执行工具并查看结果
 
