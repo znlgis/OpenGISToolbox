@@ -1,3 +1,5 @@
+using OpenGISToolbox.Services;
+
 namespace OpenGISToolbox.Models;
 
 public enum ParameterType
@@ -14,10 +16,13 @@ public class ToolParameter
 {
     public string Name { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
+    public string LabelZh { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public ParameterType Type { get; set; }
     public string? DefaultValue { get; set; }
     public string[]? Options { get; set; }  // For dropdown
     public bool Required { get; set; } = true;
     public string? FileFilter { get; set; }  // For file dialogs, e.g. "Shapefile|*.shp"
+
+    public string DisplayLabel => LanguageManager.Instance.CurrentLanguage == "zh" && !string.IsNullOrEmpty(LabelZh) ? LabelZh : Label;
 }

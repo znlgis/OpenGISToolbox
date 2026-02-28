@@ -40,51 +40,51 @@ public static class ToolRegistry
         var tools = new List<ToolInfo>();
 
         // Conversion tools
-        tools.Add(CreateConversionTool("shp-to-geojson", "SHP → GeoJSON", "Convert Shapefile to GeoJSON format",
+        tools.Add(CreateConversionTool("shp-to-geojson", "SHP → GeoJSON", "SHP → GeoJSON", "Convert Shapefile to GeoJSON format", "将 Shapefile 转换为 GeoJSON 格式",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp",
             DataFormatType.GEOJSON, ".geojson", "GeoJSON|*.geojson"));
 
-        tools.Add(CreateConversionTool("geojson-to-shp", "GeoJSON → SHP", "Convert GeoJSON to Shapefile format",
+        tools.Add(CreateConversionTool("geojson-to-shp", "GeoJSON → SHP", "GeoJSON → SHP", "Convert GeoJSON to Shapefile format", "将 GeoJSON 转换为 Shapefile 格式",
             DataFormatType.GEOJSON, ".geojson", "GeoJSON|*.geojson",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp"));
 
-        tools.Add(CreateConversionTool("shp-to-kml", "SHP → KML", "Convert Shapefile to KML format",
+        tools.Add(CreateConversionTool("shp-to-kml", "SHP → KML", "SHP → KML", "Convert Shapefile to KML format", "将 Shapefile 转换为 KML 格式",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp",
             DataFormatType.KML, ".kml", "KML|*.kml"));
 
-        tools.Add(CreateConversionTool("kml-to-shp", "KML → SHP", "Convert KML to Shapefile format",
+        tools.Add(CreateConversionTool("kml-to-shp", "KML → SHP", "KML → SHP", "Convert KML to Shapefile format", "将 KML 转换为 Shapefile 格式",
             DataFormatType.KML, ".kml", "KML|*.kml",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp"));
 
-        tools.Add(CreateConversionTool("shp-to-gpkg", "SHP → GeoPackage", "Convert Shapefile to GeoPackage format",
+        tools.Add(CreateConversionTool("shp-to-gpkg", "SHP → GeoPackage", "SHP → GeoPackage", "Convert Shapefile to GeoPackage format", "将 Shapefile 转换为 GeoPackage 格式",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp",
             DataFormatType.GEOPACKAGE, ".gpkg", "GeoPackage|*.gpkg"));
 
-        tools.Add(CreateConversionTool("gpkg-to-shp", "GeoPackage → SHP", "Convert GeoPackage to Shapefile format",
+        tools.Add(CreateConversionTool("gpkg-to-shp", "GeoPackage → SHP", "GeoPackage → SHP", "Convert GeoPackage to Shapefile format", "将 GeoPackage 转换为 Shapefile 格式",
             DataFormatType.GEOPACKAGE, ".gpkg", "GeoPackage|*.gpkg",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp"));
 
-        tools.Add(CreateConversionTool("shp-to-dxf", "SHP → DXF", "Convert Shapefile to DXF format",
+        tools.Add(CreateConversionTool("shp-to-dxf", "SHP → DXF", "SHP → DXF", "Convert Shapefile to DXF format", "将 Shapefile 转换为 DXF 格式",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp",
             DataFormatType.DXF, ".dxf", "DXF|*.dxf"));
 
-        tools.Add(CreateConversionTool("dxf-to-shp", "DXF → SHP", "Convert DXF to Shapefile format",
+        tools.Add(CreateConversionTool("dxf-to-shp", "DXF → SHP", "DXF → SHP", "Convert DXF to Shapefile format", "将 DXF 转换为 Shapefile 格式",
             DataFormatType.DXF, ".dxf", "DXF|*.dxf",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp"));
 
-        tools.Add(CreateConversionTool("geojson-to-kml", "GeoJSON → KML", "Convert GeoJSON to KML format",
+        tools.Add(CreateConversionTool("geojson-to-kml", "GeoJSON → KML", "GeoJSON → KML", "Convert GeoJSON to KML format", "将 GeoJSON 转换为 KML 格式",
             DataFormatType.GEOJSON, ".geojson", "GeoJSON|*.geojson",
             DataFormatType.KML, ".kml", "KML|*.kml"));
 
-        tools.Add(CreateConversionTool("geojson-to-gpkg", "GeoJSON → GeoPackage", "Convert GeoJSON to GeoPackage format",
+        tools.Add(CreateConversionTool("geojson-to-gpkg", "GeoJSON → GeoPackage", "GeoJSON → GeoPackage", "Convert GeoJSON to GeoPackage format", "将 GeoJSON 转换为 GeoPackage 格式",
             DataFormatType.GEOJSON, ".geojson", "GeoJSON|*.geojson",
             DataFormatType.GEOPACKAGE, ".gpkg", "GeoPackage|*.gpkg"));
 
-        tools.Add(CreateConversionTool("filegdb-to-shp", "FileGDB → SHP", "Convert FileGDB to Shapefile format",
+        tools.Add(CreateConversionTool("filegdb-to-shp", "FileGDB → SHP", "FileGDB → SHP", "Convert FileGDB to Shapefile format", "将 FileGDB 转换为 Shapefile 格式",
             DataFormatType.FILEGDB, ".gdb", "FileGDB|*.gdb",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp"));
 
-        tools.Add(CreateConversionTool("shp-to-filegdb", "SHP → FileGDB", "Convert Shapefile to FileGDB format",
+        tools.Add(CreateConversionTool("shp-to-filegdb", "SHP → FileGDB", "SHP → FileGDB", "Convert Shapefile to FileGDB format", "将 Shapefile 转换为 FileGDB 格式",
             DataFormatType.SHP, ".shp", "Shapefile|*.shp",
             DataFormatType.FILEGDB, ".gdb", "FileGDB|*.gdb"));
 
@@ -143,7 +143,7 @@ public static class ToolRegistry
     }
 
     private static ToolInfo CreateConversionTool(
-        string id, string name, string description,
+        string id, string name, string nameZh, string description, string descriptionZh,
         DataFormatType sourceFormat, string sourceExt, string sourceFilter,
         DataFormatType targetFormat, string targetExt, string targetFilter)
     {
@@ -151,7 +151,9 @@ public static class ToolRegistry
         {
             Id = id,
             Name = name,
+            NameZh = nameZh,
             Description = description,
+            DescriptionZh = descriptionZh,
             Category = ToolCategory.Conversion,
             Parameters = new List<ToolParameter>
             {
@@ -159,6 +161,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = $"Input {sourceExt} file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -168,6 +171,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = $"Output {targetExt} file",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -212,7 +216,9 @@ public static class ToolRegistry
         {
             Id = "buffer",
             Name = "Buffer",
+            NameZh = "缓冲区",
             Description = "Create a buffer zone around a geometry",
+            DescriptionZh = "在几何体周围创建缓冲区",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -220,6 +226,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -229,6 +236,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -238,6 +246,7 @@ public static class ToolRegistry
                 {
                     Name = "distance",
                     Label = "Buffer Distance",
+                    LabelZh = "缓冲距离",
                     Description = "Buffer distance (in coordinate system units)",
                     Type = ParameterType.Number,
                     Required = true,
@@ -285,7 +294,9 @@ public static class ToolRegistry
         {
             Id = "union",
             Name = "Union",
+            NameZh = "合并",
             Description = "Compute the union of two geometries",
+            DescriptionZh = "计算两个几何体的并集",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -293,6 +304,7 @@ public static class ToolRegistry
                 {
                     Name = "input1",
                     Label = "First WKT File",
+                    LabelZh = "第一个WKT文件",
                     Description = "Text file containing the first WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -302,6 +314,7 @@ public static class ToolRegistry
                 {
                     Name = "input2",
                     Label = "Second WKT File",
+                    LabelZh = "第二个WKT文件",
                     Description = "Text file containing the second WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -311,6 +324,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -359,7 +373,9 @@ public static class ToolRegistry
         {
             Id = "intersection",
             Name = "Intersection",
+            NameZh = "交集",
             Description = "Compute the intersection of two geometries",
+            DescriptionZh = "计算两个几何体的交集",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -367,6 +383,7 @@ public static class ToolRegistry
                 {
                     Name = "input1",
                     Label = "First WKT File",
+                    LabelZh = "第一个WKT文件",
                     Description = "Text file containing the first WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -376,6 +393,7 @@ public static class ToolRegistry
                 {
                     Name = "input2",
                     Label = "Second WKT File",
+                    LabelZh = "第二个WKT文件",
                     Description = "Text file containing the second WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -385,6 +403,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -433,7 +452,9 @@ public static class ToolRegistry
         {
             Id = "difference",
             Name = "Difference",
+            NameZh = "差集",
             Description = "Compute the difference of two geometries (A minus B)",
+            DescriptionZh = "计算两个几何体的差集（A 减去 B）",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -441,6 +462,7 @@ public static class ToolRegistry
                 {
                     Name = "input1",
                     Label = "First WKT File (A)",
+                    LabelZh = "第一个WKT文件 (A)",
                     Description = "Text file containing the first WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -450,6 +472,7 @@ public static class ToolRegistry
                 {
                     Name = "input2",
                     Label = "Second WKT File (B)",
+                    LabelZh = "第二个WKT文件 (B)",
                     Description = "Text file containing the second WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -459,6 +482,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -510,7 +534,9 @@ public static class ToolRegistry
         {
             Id = "convex-hull",
             Name = "Convex Hull",
+            NameZh = "凸包",
             Description = "Compute the convex hull of a geometry",
+            DescriptionZh = "计算几何体的凸包",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -518,6 +544,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -527,6 +554,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -575,7 +603,9 @@ public static class ToolRegistry
         {
             Id = "centroid",
             Name = "Centroid",
+            NameZh = "质心",
             Description = "Compute the centroid of a geometry",
+            DescriptionZh = "计算几何体的质心",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -583,6 +613,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -592,6 +623,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -638,7 +670,9 @@ public static class ToolRegistry
         {
             Id = "simplify",
             Name = "Simplify",
+            NameZh = "简化",
             Description = "Simplify a geometry using the Douglas-Peucker algorithm",
+            DescriptionZh = "使用 Douglas-Peucker 算法简化几何体",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -646,6 +680,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -655,6 +690,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the result WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -664,6 +700,7 @@ public static class ToolRegistry
                 {
                     Name = "tolerance",
                     Label = "Tolerance",
+                    LabelZh = "容差",
                     Description = "Simplification tolerance",
                     Type = ParameterType.Number,
                     Required = true,
@@ -711,7 +748,9 @@ public static class ToolRegistry
         {
             Id = "check-geometry",
             Name = "Check Geometry",
+            NameZh = "检查几何",
             Description = "Validate the geometry and report whether it is valid",
+            DescriptionZh = "验证几何体并报告是否有效",
             Category = ToolCategory.Validation,
             Parameters = new List<ToolParameter>
             {
@@ -719,6 +758,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -766,7 +806,9 @@ public static class ToolRegistry
         {
             Id = "reproject",
             Name = "Reproject",
+            NameZh = "重投影",
             Description = "Transform coordinates from one coordinate system to another",
+            DescriptionZh = "将坐标从一个坐标系转换到另一个坐标系",
             Category = ToolCategory.Coordinate,
             Parameters = new List<ToolParameter>
             {
@@ -774,6 +816,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -783,6 +826,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output WKT File",
+                    LabelZh = "输出WKT文件",
                     Description = "Output text file for the transformed WKT",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -792,6 +836,7 @@ public static class ToolRegistry
                 {
                     Name = "sourceWkid",
                     Label = "Source WKID",
+                    LabelZh = "源 WKID",
                     Description = "Source coordinate system WKID (e.g. 4326 for WGS84)",
                     Type = ParameterType.Integer,
                     Required = true,
@@ -801,6 +846,7 @@ public static class ToolRegistry
                 {
                     Name = "targetWkid",
                     Label = "Target WKID",
+                    LabelZh = "目标 WKID",
                     Description = "Target coordinate system WKID (e.g. 4490 for CGCS2000)",
                     Type = ParameterType.Integer,
                     Required = true,
@@ -849,7 +895,9 @@ public static class ToolRegistry
         {
             Id = "calculate-area",
             Name = "Calculate Area",
+            NameZh = "计算面积",
             Description = "Calculate the area of a geometry",
+            DescriptionZh = "计算几何体的面积",
             Category = ToolCategory.Analysis,
             Parameters = new List<ToolParameter>
             {
@@ -857,6 +905,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -899,7 +948,9 @@ public static class ToolRegistry
         {
             Id = "calculate-length",
             Name = "Calculate Length",
+            NameZh = "计算长度",
             Description = "Calculate the length of a geometry",
+            DescriptionZh = "计算几何体的长度",
             Category = ToolCategory.Analysis,
             Parameters = new List<ToolParameter>
             {
@@ -907,6 +958,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input WKT File",
+                    LabelZh = "输入WKT文件",
                     Description = "Text file containing WKT geometry",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -949,7 +1001,9 @@ public static class ToolRegistry
         {
             Id = "zip-compress",
             Name = "ZIP Compress",
+            NameZh = "ZIP 压缩",
             Description = "Compress a folder into a ZIP archive",
+            DescriptionZh = "将文件夹压缩为 ZIP 归档",
             Category = ToolCategory.Utility,
             Parameters = new List<ToolParameter>
             {
@@ -957,6 +1011,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input Folder",
+                    LabelZh = "输入文件夹",
                     Description = "Folder to compress",
                     Type = ParameterType.Text,
                     Required = true
@@ -965,6 +1020,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output ZIP File",
+                    LabelZh = "输出ZIP文件",
                     Description = "Output ZIP file path",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1006,7 +1062,9 @@ public static class ToolRegistry
         {
             Id = "zip-extract",
             Name = "ZIP Extract",
+            NameZh = "ZIP 解压",
             Description = "Extract a ZIP archive to a folder",
+            DescriptionZh = "将 ZIP 归档解压到文件夹",
             Category = ToolCategory.Utility,
             Parameters = new List<ToolParameter>
             {
@@ -1014,6 +1072,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input ZIP File",
+                    LabelZh = "输入ZIP文件",
                     Description = "ZIP file to extract",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1023,6 +1082,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output Folder",
+                    LabelZh = "输出文件夹",
                     Description = "Destination folder for extraction",
                     Type = ParameterType.Text,
                     Required = true
@@ -1078,7 +1138,9 @@ public static class ToolRegistry
         {
             Id = "csv-to-vector",
             Name = "CSV → Vector",
+            NameZh = "CSV → 矢量",
             Description = "Convert CSV file with coordinates to Shapefile",
+            DescriptionZh = "将带坐标的 CSV 文件转换为 Shapefile",
             Category = ToolCategory.Conversion,
             Parameters = new List<ToolParameter>
             {
@@ -1086,6 +1148,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input CSV file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1095,6 +1158,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1104,6 +1168,7 @@ public static class ToolRegistry
                 {
                     Name = "xField",
                     Label = "X (Longitude) Column Name",
+                    LabelZh = "X（经度）列名",
                     Description = "Name of the column containing X/Longitude values",
                     Type = ParameterType.Text,
                     Required = true,
@@ -1113,6 +1178,7 @@ public static class ToolRegistry
                 {
                     Name = "yField",
                     Label = "Y (Latitude) Column Name",
+                    LabelZh = "Y（纬度）列名",
                     Description = "Name of the column containing Y/Latitude values",
                     Type = ParameterType.Text,
                     Required = true,
@@ -1122,6 +1188,7 @@ public static class ToolRegistry
                 {
                     Name = "delimiter",
                     Label = "Delimiter",
+                    LabelZh = "分隔符",
                     Description = "Column delimiter character",
                     Type = ParameterType.Dropdown,
                     Required = true,
@@ -1132,6 +1199,7 @@ public static class ToolRegistry
                 {
                     Name = "wkid",
                     Label = "Coordinate System WKID",
+                    LabelZh = "坐标系 WKID",
                     Description = "WKID of the coordinate system (e.g. 4326 for WGS84)",
                     Type = ParameterType.Integer,
                     Required = true,
@@ -1240,7 +1308,9 @@ public static class ToolRegistry
         {
             Id = "fix-geometries",
             Name = "Fix Geometries",
+            NameZh = "修复几何",
             Description = "Fix invalid geometries using the buffer(0) technique",
+            DescriptionZh = "使用 buffer(0) 技术修复无效几何体",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -1248,6 +1318,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1257,6 +1328,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output vector file",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1317,7 +1389,9 @@ public static class ToolRegistry
         {
             Id = "merge-layers",
             Name = "Merge Layers",
+            NameZh = "合并图层",
             Description = "Merge two vector layers into one",
+            DescriptionZh = "将两个矢量图层合并为一个",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -1325,6 +1399,7 @@ public static class ToolRegistry
                 {
                     Name = "input1",
                     Label = "First Input File",
+                    LabelZh = "第一个输入文件",
                     Description = "First input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1334,6 +1409,7 @@ public static class ToolRegistry
                 {
                     Name = "input2",
                     Label = "Second Input File",
+                    LabelZh = "第二个输入文件",
                     Description = "Second input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1343,6 +1419,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1416,7 +1493,9 @@ public static class ToolRegistry
         {
             Id = "split-layer",
             Name = "Split Layer",
+            NameZh = "拆分图层",
             Description = "Split a vector layer into multiple layers by field value",
+            DescriptionZh = "按字段值将矢量图层拆分为多个图层",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -1424,6 +1503,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1433,6 +1513,7 @@ public static class ToolRegistry
                 {
                     Name = "fieldName",
                     Label = "Split Field Name",
+                    LabelZh = "拆分字段名",
                     Description = "Name of the field to split by",
                     Type = ParameterType.Text,
                     Required = true
@@ -1441,6 +1522,7 @@ public static class ToolRegistry
                 {
                     Name = "outputFolder",
                     Label = "Output Folder",
+                    LabelZh = "输出文件夹",
                     Description = "Folder to write split layers to",
                     Type = ParameterType.Text,
                     Required = true
@@ -1517,7 +1599,9 @@ public static class ToolRegistry
         {
             Id = "clip",
             Name = "Clip",
+            NameZh = "裁剪",
             Description = "Clip a vector layer by a polygon layer",
+            DescriptionZh = "使用多边形图层裁剪矢量图层",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -1525,6 +1609,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input vector file to clip",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1534,6 +1619,7 @@ public static class ToolRegistry
                 {
                     Name = "clipLayer",
                     Label = "Clip Polygon File",
+                    LabelZh = "裁剪多边形文件",
                     Description = "Polygon layer to clip by",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1543,6 +1629,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1625,7 +1712,9 @@ public static class ToolRegistry
         {
             Id = "spatial-join",
             Name = "Spatial Join",
+            NameZh = "空间连接",
             Description = "Join attributes from one layer to another based on spatial relationship",
+            DescriptionZh = "基于空间关系将一个图层的属性连接到另一个图层",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -1633,6 +1722,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Target Layer",
+                    LabelZh = "目标图层",
                     Description = "Target vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1642,6 +1732,7 @@ public static class ToolRegistry
                 {
                     Name = "joinLayer",
                     Label = "Join Layer",
+                    LabelZh = "连接图层",
                     Description = "Layer to join attributes from",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1651,6 +1742,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1660,6 +1752,7 @@ public static class ToolRegistry
                 {
                     Name = "joinType",
                     Label = "Spatial Relationship",
+                    LabelZh = "空间关系",
                     Description = "Type of spatial relationship for the join",
                     Type = ParameterType.Dropdown,
                     Required = true,
@@ -1762,7 +1855,9 @@ public static class ToolRegistry
         {
             Id = "batch-reproject",
             Name = "Batch Reproject",
+            NameZh = "批量重投影",
             Description = "Reproject all vector files in a folder to a different coordinate system",
+            DescriptionZh = "将文件夹中所有矢量文件重投影到不同的坐标系",
             Category = ToolCategory.Coordinate,
             Parameters = new List<ToolParameter>
             {
@@ -1770,6 +1865,7 @@ public static class ToolRegistry
                 {
                     Name = "inputFolder",
                     Label = "Input Folder",
+                    LabelZh = "输入文件夹",
                     Description = "Folder containing vector files",
                     Type = ParameterType.Text,
                     Required = true
@@ -1778,6 +1874,7 @@ public static class ToolRegistry
                 {
                     Name = "outputFolder",
                     Label = "Output Folder",
+                    LabelZh = "输出文件夹",
                     Description = "Folder to write reprojected files to",
                     Type = ParameterType.Text,
                     Required = true
@@ -1786,6 +1883,7 @@ public static class ToolRegistry
                 {
                     Name = "sourceWkid",
                     Label = "Source WKID",
+                    LabelZh = "源 WKID",
                     Description = "Source coordinate system WKID (e.g. 4326 for WGS84)",
                     Type = ParameterType.Integer,
                     Required = true,
@@ -1795,6 +1893,7 @@ public static class ToolRegistry
                 {
                     Name = "targetWkid",
                     Label = "Target WKID",
+                    LabelZh = "目标 WKID",
                     Description = "Target coordinate system WKID (e.g. 4490 for CGCS2000)",
                     Type = ParameterType.Integer,
                     Required = true,
@@ -1804,6 +1903,7 @@ public static class ToolRegistry
                 {
                     Name = "format",
                     Label = "File Format",
+                    LabelZh = "文件格式",
                     Description = "Vector file format to process",
                     Type = ParameterType.Dropdown,
                     Required = true,
@@ -1880,7 +1980,9 @@ public static class ToolRegistry
         {
             Id = "spatial-filter",
             Name = "Spatial Filter",
+            NameZh = "空间过滤",
             Description = "Filter features by spatial extent (WKT polygon)",
+            DescriptionZh = "按空间范围过滤要素（WKT 多边形）",
             Category = ToolCategory.Analysis,
             Parameters = new List<ToolParameter>
             {
@@ -1888,6 +1990,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1897,6 +2000,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output vector file",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1906,6 +2010,7 @@ public static class ToolRegistry
                 {
                     Name = "extentWkt",
                     Label = "Filter Extent (WKT)",
+                    LabelZh = "过滤范围 (WKT)",
                     Description = "WKT polygon to filter features by (e.g. POLYGON((...)))",
                     Type = ParameterType.Text,
                     Required = true
@@ -1970,7 +2075,9 @@ public static class ToolRegistry
         {
             Id = "attribute-query",
             Name = "Attribute Query",
+            NameZh = "属性查询",
             Description = "Filter features by attribute expression (SQL WHERE clause)",
+            DescriptionZh = "按属性表达式过滤要素（SQL WHERE 子句）",
             Category = ToolCategory.Analysis,
             Parameters = new List<ToolParameter>
             {
@@ -1978,6 +2085,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -1987,6 +2095,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -1996,6 +2105,7 @@ public static class ToolRegistry
                 {
                     Name = "whereClause",
                     Label = "WHERE Clause",
+                    LabelZh = "WHERE 子句",
                     Description = "SQL WHERE expression (e.g. population > 1000)",
                     Type = ParameterType.Text,
                     Required = true
@@ -2042,7 +2152,9 @@ public static class ToolRegistry
         {
             Id = "postgis-import",
             Name = "PostGIS Import",
+            NameZh = "PostGIS 导入",
             Description = "Import a PostGIS table to a Shapefile",
+            DescriptionZh = "将 PostGIS 表导入为 Shapefile",
             Category = ToolCategory.Conversion,
             Parameters = new List<ToolParameter>
             {
@@ -2050,6 +2162,7 @@ public static class ToolRegistry
                 {
                     Name = "connectionString",
                     Label = "Connection String",
+                    LabelZh = "连接字符串",
                     Description = "PostgreSQL connection string (e.g. Host=localhost;Port=5432;Database=mydb;Username=user;Password=pass)",
                     Type = ParameterType.Text,
                     Required = true
@@ -2058,6 +2171,7 @@ public static class ToolRegistry
                 {
                     Name = "tableName",
                     Label = "Table Name",
+                    LabelZh = "表名",
                     Description = "PostGIS table name to import",
                     Type = ParameterType.Text,
                     Required = true
@@ -2066,6 +2180,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -2111,7 +2226,9 @@ public static class ToolRegistry
         {
             Id = "postgis-export",
             Name = "PostGIS Export",
+            NameZh = "PostGIS 导出",
             Description = "Export a vector file to a PostGIS table",
+            DescriptionZh = "将矢量文件导出到 PostGIS 表",
             Category = ToolCategory.Conversion,
             Parameters = new List<ToolParameter>
             {
@@ -2119,6 +2236,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -2128,6 +2246,7 @@ public static class ToolRegistry
                 {
                     Name = "connectionString",
                     Label = "Connection String",
+                    LabelZh = "连接字符串",
                     Description = "PostgreSQL connection string (e.g. Host=localhost;Port=5432;Database=mydb;Username=user;Password=pass)",
                     Type = ParameterType.Text,
                     Required = true
@@ -2136,6 +2255,7 @@ public static class ToolRegistry
                 {
                     Name = "tableName",
                     Label = "Table Name",
+                    LabelZh = "表名",
                     Description = "PostGIS table name to export to",
                     Type = ParameterType.Text,
                     Required = true
@@ -2180,7 +2300,9 @@ public static class ToolRegistry
         {
             Id = "central-lines",
             Name = "Central Lines",
+            NameZh = "中心线",
             Description = "Approximate center lines of polygons using negative buffering",
+            DescriptionZh = "使用负缓冲区近似计算多边形的中心线",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
@@ -2188,6 +2310,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Input polygon vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -2197,6 +2320,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output Shapefile with center lines",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -2291,7 +2415,9 @@ public static class ToolRegistry
         {
             Id = "raster-format-convert",
             Name = "Raster Format Conversion",
+            NameZh = "栅格格式转换",
             Description = "Convert raster data between different formats (GeoTIFF, PNG, JPEG, BMP)",
+            DescriptionZh = "在不同格式之间转换栅格数据（GeoTIFF、PNG、JPEG、BMP）",
             Category = ToolCategory.Raster,
             Parameters = new List<ToolParameter>
             {
@@ -2299,6 +2425,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input Raster File",
+                    LabelZh = "输入栅格文件",
                     Description = "Input raster file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -2308,6 +2435,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output Raster File",
+                    LabelZh = "输出栅格文件",
                     Description = "Output raster file",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -2374,7 +2502,9 @@ public static class ToolRegistry
         {
             Id = "raster-calculator",
             Name = "Raster Calculator",
+            NameZh = "栅格计算器",
             Description = "Perform band math operations on raster data",
+            DescriptionZh = "对栅格数据执行波段数学运算",
             Category = ToolCategory.Raster,
             Parameters = new List<ToolParameter>
             {
@@ -2382,6 +2512,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input Raster File",
+                    LabelZh = "输入栅格文件",
                     Description = "Input GeoTIFF raster file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -2391,6 +2522,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output Raster File",
+                    LabelZh = "输出栅格文件",
                     Description = "Output GeoTIFF raster file",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -2400,6 +2532,7 @@ public static class ToolRegistry
                 {
                     Name = "operation",
                     Label = "Operation",
+                    LabelZh = "运算",
                     Description = "Band math operation to perform",
                     Type = ParameterType.Dropdown,
                     Required = true,
@@ -2410,6 +2543,7 @@ public static class ToolRegistry
                 {
                     Name = "value",
                     Label = "Value",
+                    LabelZh = "值",
                     Description = "Value for scale factor, offset, or threshold",
                     Type = ParameterType.Number,
                     Required = true,
@@ -2523,7 +2657,9 @@ public static class ToolRegistry
         {
             Id = "satellite-download",
             Name = "Satellite Image Download",
+            NameZh = "卫星影像下载",
             Description = "Download satellite imagery tiles from public tile services (OpenStreetMap, Esri World Imagery)",
+            DescriptionZh = "从公共瓦片服务下载卫星影像瓦片（OpenStreetMap、Esri World Imagery）",
             Category = ToolCategory.RemoteSensing,
             Parameters = new List<ToolParameter>
             {
@@ -2531,6 +2667,7 @@ public static class ToolRegistry
                 {
                     Name = "longitude",
                     Label = "Center Longitude",
+                    LabelZh = "中心经度",
                     Description = "Center longitude in degrees",
                     Type = ParameterType.Number,
                     Required = true,
@@ -2540,6 +2677,7 @@ public static class ToolRegistry
                 {
                     Name = "latitude",
                     Label = "Center Latitude",
+                    LabelZh = "中心纬度",
                     Description = "Center latitude in degrees",
                     Type = ParameterType.Number,
                     Required = true,
@@ -2549,6 +2687,7 @@ public static class ToolRegistry
                 {
                     Name = "zoom",
                     Label = "Zoom Level",
+                    LabelZh = "缩放级别",
                     Description = "Zoom level (0-19)",
                     Type = ParameterType.Integer,
                     Required = true,
@@ -2558,6 +2697,7 @@ public static class ToolRegistry
                 {
                     Name = "source",
                     Label = "Tile Source",
+                    LabelZh = "瓦片来源",
                     Description = "Tile service provider",
                     Type = ParameterType.Dropdown,
                     Required = true,
@@ -2568,6 +2708,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output image file",
                     Type = ParameterType.OutputFile,
                     Required = true,
@@ -2625,7 +2766,9 @@ public static class ToolRegistry
         {
             Id = "gpx-processing",
             Name = "GPX Processing",
+            NameZh = "GPX 处理",
             Description = "Process GPX files: merge multiple GPX files, extract tracks/waypoints, or convert GPX to GeoJSON",
+            DescriptionZh = "处理 GPX 文件：合并多个 GPX 文件、提取轨迹/路点或将 GPX 转换为 GeoJSON",
             Category = ToolCategory.GPS,
             Parameters = new List<ToolParameter>
             {
@@ -2633,6 +2776,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input GPX File",
+                    LabelZh = "输入GPX文件",
                     Description = "Input GPX file",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -2642,6 +2786,7 @@ public static class ToolRegistry
                 {
                     Name = "operation",
                     Label = "Operation",
+                    LabelZh = "操作",
                     Description = "Processing operation to perform",
                     Type = ParameterType.Dropdown,
                     Required = true,
@@ -2652,6 +2797,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output File",
+                    LabelZh = "输出文件",
                     Description = "Output file (not required for GPX Summary)",
                     Type = ParameterType.OutputFile,
                     Required = false,
@@ -2792,7 +2938,9 @@ public static class ToolRegistry
         {
             Id = "geocode-addresses",
             Name = "Geocode Addresses",
+            NameZh = "地址编码",
             Description = "Geocode addresses to coordinates using OpenStreetMap Nominatim service",
+            DescriptionZh = "使用 OpenStreetMap Nominatim 服务将地址编码为坐标",
             Category = ToolCategory.Geocoding,
             Parameters = new List<ToolParameter>
             {
@@ -2800,6 +2948,7 @@ public static class ToolRegistry
                 {
                     Name = "input",
                     Label = "Input File",
+                    LabelZh = "输入文件",
                     Description = "Text file with one address per line",
                     Type = ParameterType.InputFile,
                     Required = true,
@@ -2809,6 +2958,7 @@ public static class ToolRegistry
                 {
                     Name = "output",
                     Label = "Output CSV File",
+                    LabelZh = "输出CSV文件",
                     Description = "Output CSV file with geocoded coordinates",
                     Type = ParameterType.OutputFile,
                     Required = true,

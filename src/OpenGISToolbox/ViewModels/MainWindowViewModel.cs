@@ -55,6 +55,26 @@ public partial class MainWindowViewModel : ViewModelBase
             cat.DisplayName = GetCategoryDisplayName(cat.Category);
             cat.RefreshToolCountDisplay();
         }
+
+        // Refresh tool list to update DisplayName/DisplayDescription
+        var selectedId = SelectedTool?.Id;
+        var currentCategoryItem = SelectedCategoryItem;
+        var allTools = ToolRegistry.GetAllTools();
+
+        FilteredTools.Clear();
+        var filtered = currentCategoryItem != null
+            ? allTools.Where(t => t.Category == currentCategoryItem.Category)
+            : allTools;
+        foreach (var tool in filtered)
+            FilteredTools.Add(tool);
+
+        // Restore selection by Id
+        if (selectedId != null)
+        {
+            var restored = FilteredTools.FirstOrDefault(t => t.Id == selectedId);
+            if (restored != null)
+                SelectedTool = restored;
+        }
     }
 
     partial void OnSelectedCategoryItemChanged(ToolCategoryItem? value)

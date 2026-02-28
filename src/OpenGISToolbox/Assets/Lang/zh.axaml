@@ -39,4 +39,10 @@
     <system:String x:Key="SelectInputFile">选择输入文件</system:String>
     <system:String x:Key="SelectOutputFilePicker">选择输出文件</system:String>
 
+    <!-- Execution messages -->
+    <system:String x:Key="MissingRequired">缺少必填参数：</system:String>
+    <system:String x:Key="DurationFormat"> (耗时：{0:F2}秒)</system:String>
+    <system:String x:Key="ErrorPrefix">错误：</system:String>
+    <system:String x:Key="ExceptionPrefix">异常：</system:String>
+
 </ResourceDictionary>

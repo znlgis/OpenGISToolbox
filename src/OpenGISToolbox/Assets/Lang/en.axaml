@@ -39,4 +39,10 @@
     <system:String x:Key="SelectInputFile">Select Input File</system:String>
     <system:String x:Key="SelectOutputFilePicker">Select Output File</system:String>
 
+    <!-- Execution messages -->
+    <system:String x:Key="MissingRequired">Missing required parameters: </system:String>
+    <system:String x:Key="DurationFormat"> (Duration: {0:F2}s)</system:String>
+    <system:String x:Key="ErrorPrefix">Error: </system:String>
+    <system:String x:Key="ExceptionPrefix">Exception: </system:String>
+
 </ResourceDictionary>
