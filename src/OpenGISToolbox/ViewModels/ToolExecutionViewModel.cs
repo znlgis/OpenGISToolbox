@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGISToolbox.Models;
+using OpenGISToolbox.Services;
 
 namespace OpenGISToolbox.ViewModels;
 
@@ -74,7 +75,7 @@ public partial class ToolExecutionViewModel : ViewModelBase
             if (missing.Count > 0)
             {
                 ResultSuccess = false;
-                ResultMessage = "Missing required parameters: " + string.Join(", ", missing);
+                ResultMessage = LanguageManager.GetLocalizedString("MissingRequired", "Missing required parameters: ") + string.Join(", ", missing);
                 HasResult = true;
                 return;
             }
@@ -89,15 +90,20 @@ public partial class ToolExecutionViewModel : ViewModelBase
             ResultSuccess = result.Success;
             ResultMessage = result.Message;
             if (result.Duration != TimeSpan.Zero)
-                ResultMessage += $" (Duration: {result.Duration.TotalSeconds:F2}s)";
+            {
+                var durationFmt = LanguageManager.GetLocalizedString("DurationFormat", " (Duration: {0:F2}s)");
+                ResultMessage += string.Format(durationFmt, result.Duration.TotalSeconds);
+            }
             HasResult = true;
         }
         catch (Exception ex)
         {
             ResultSuccess = false;
-            ResultMessage = $"Error: {ex.Message}";
+            var errorPrefix = LanguageManager.GetLocalizedString("ErrorPrefix", "Error: ");
+            ResultMessage = $"{errorPrefix}{ex.Message}";
             HasResult = true;
-            LogOutput += $"Exception: {ex.Message}{Environment.NewLine}";
+            var exceptionPrefix = LanguageManager.GetLocalizedString("ExceptionPrefix", "Exception: ");
+            LogOutput += $"{exceptionPrefix}{ex.Message}{Environment.NewLine}";
         }
         finally
         {

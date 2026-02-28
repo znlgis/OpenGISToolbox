@@ -16,7 +16,7 @@ public partial class ToolParameterViewModel : ViewModelBase
     [ObservableProperty]
     private string _value;
 
-    public string Label => Parameter.Label;
+    public string Label => Parameter.DisplayLabel;
     public ParameterType Type => Parameter.Type;
     public string[]? Options => Parameter.Options;
     public string? FileFilter => Parameter.FileFilter;
