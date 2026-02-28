@@ -5,6 +5,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGISToolbox.Models;
+using OpenGISToolbox.Services;
 
 namespace OpenGISToolbox.ViewModels;
 
@@ -43,7 +44,7 @@ public partial class ToolParameterViewModel : ViewModelBase
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(
                 new FilePickerOpenOptions
                 {
-                    Title = "Select Input File",
+                    Title = LanguageManager.GetLocalizedString("SelectInputFile", "Select Input File"),
                     AllowMultiple = false
                 });
 
@@ -55,7 +56,7 @@ public partial class ToolParameterViewModel : ViewModelBase
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(
                 new FilePickerSaveOptions
                 {
-                    Title = "Select Output File"
+                    Title = LanguageManager.GetLocalizedString("SelectOutputFilePicker", "Select Output File")
                 });
 
             if (file != null)

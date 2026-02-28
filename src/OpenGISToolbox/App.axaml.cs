@@ -4,6 +4,7 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using OpenGISToolbox.Services;
 using OpenGISToolbox.ViewModels;
 using OpenGISToolbox.Views;
 
@@ -14,6 +15,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        LanguageManager.Instance.Initialize("en");
     }
 
     public override void OnFrameworkInitializationCompleted()
