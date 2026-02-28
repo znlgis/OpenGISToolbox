@@ -23,6 +23,18 @@ namespace OpenGISToolbox.Services;
 
 public static class ToolRegistry
 {
+    private static readonly Lazy<HttpClient> SharedHttpClient = new(() =>
+    {
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("OpenGISToolbox/1.0 (github.com/znlgis/OpenGISToolbox)");
+        return client;
+    });
+
+    private static void EnsureGdalInitialized()
+    {
+        GdalBase.ConfigureAll();
+    }
+
     public static List<ToolInfo> GetAllTools()
     {
         var tools = new List<ToolInfo>();
@@ -2311,7 +2323,7 @@ public static class ToolRegistry
                     var outputPath = parameters["output"];
 
                     progress?.Report("Initializing GDAL...");
-                    await Task.Run(() => GdalBase.ConfigureAll(), ct);
+                    await Task.Run(EnsureGdalInitialized, ct);
 
                     var ext = Path.GetExtension(outputPath)?.ToLowerInvariant();
                     var driverName = ext switch
@@ -2415,7 +2427,7 @@ public static class ToolRegistry
                     var value = double.Parse(parameters["value"], CultureInfo.InvariantCulture);
 
                     progress?.Report("Initializing GDAL...");
-                    await Task.Run(() => GdalBase.ConfigureAll(), ct);
+                    await Task.Run(EnsureGdalInitialized, ct);
 
                     progress?.Report("Opening input raster...");
                     using var srcDs = Gdal.Open(inputPath, Access.GA_ReadOnly);
@@ -2584,8 +2596,7 @@ public static class ToolRegistry
                         : $"https://tile.openstreetmap.org/{zoom}/{tileX}/{tileY}.png";
 
                     progress?.Report($"Downloading tile ({tileX}, {tileY}) at zoom {zoom}...");
-                    using var httpClient = new HttpClient();
-                    httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("OpenGISToolbox/1.0");
+                    var httpClient = SharedHttpClient.Value;
 
                     var imageBytes = await httpClient.GetByteArrayAsync(url, ct);
                     await File.WriteAllBytesAsync(outputPath, imageBytes, ct);
@@ -2821,8 +2832,7 @@ public static class ToolRegistry
 
                     var results = new List<string> { "Address,Latitude,Longitude,DisplayName" };
 
-                    using var httpClient = new HttpClient();
-                    httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("OpenGISToolbox/1.0 (github.com/znlgis/OpenGISToolbox)");
+                    var httpClient = SharedHttpClient.Value;
 
                     var geocodedCount = 0;
                     for (var i = 0; i < addresses.Count; i++)
@@ -2863,6 +2873,7 @@ public static class ToolRegistry
 
                         results.Add($"{EscapeCsv(address)},{lat},{lon},{EscapeCsv(displayName)}");
 
+                        // Nominatim usage policy requires max 1 request per second
                         if (i < addresses.Count - 1)
                             await Task.Delay(1000, ct);
                     }
