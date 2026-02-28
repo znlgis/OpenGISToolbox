@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGISToolbox.Models;
+using OpenGISToolbox.Services;
 
 namespace OpenGISToolbox.ViewModels;
 
@@ -28,14 +28,6 @@ public partial class ToolParameterViewModel : ViewModelBase
         _value = parameter.DefaultValue ?? string.Empty;
     }
 
-    private static string GetLocalizedString(string key, string fallback)
-    {
-        var app = Application.Current;
-        if (app != null && app.TryGetResource(key, app.ActualThemeVariant, out var value) && value is string s)
-            return s;
-        return fallback;
-    }
-
     [RelayCommand]
     private async Task BrowseFileAsync()
     {
@@ -52,7 +44,7 @@ public partial class ToolParameterViewModel : ViewModelBase
             var files = await topLevel.StorageProvider.OpenFilePickerAsync(
                 new FilePickerOpenOptions
                 {
-                    Title = GetLocalizedString("SelectInputFile", "Select Input File"),
+                    Title = LanguageManager.GetLocalizedString("SelectInputFile", "Select Input File"),
                     AllowMultiple = false
                 });
 
@@ -64,7 +56,7 @@ public partial class ToolParameterViewModel : ViewModelBase
             var file = await topLevel.StorageProvider.SaveFilePickerAsync(
                 new FilePickerSaveOptions
                 {
-                    Title = GetLocalizedString("SelectOutputFilePicker", "Select Output File")
+                    Title = LanguageManager.GetLocalizedString("SelectOutputFilePicker", "Select Output File")
                 });
 
             if (file != null)

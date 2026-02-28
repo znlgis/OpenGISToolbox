@@ -2,7 +2,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGISToolbox.Models;
@@ -44,6 +43,8 @@ public partial class MainWindowViewModel : ViewModelBase
         foreach (var tool in allTools)
             FilteredTools.Add(tool);
 
+        // LanguageChanged subscription is intentionally not unsubscribed because
+        // this ViewModel lives for the entire application lifetime (created once in App.axaml.cs).
         LanguageManager.Instance.LanguageChanged += OnLanguageChanged;
     }
 
@@ -79,11 +80,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static string GetCategoryDisplayName(ToolCategory category)
     {
-        var app = Application.Current;
-        if (app != null && app.TryGetResource(GetCategoryResourceKey(category), app.ActualThemeVariant, out var value) && value is string s)
-            return s;
-
-        return category.ToString();
+        return LanguageManager.GetLocalizedString(GetCategoryResourceKey(category), category.ToString());
     }
 
     private static string GetCategoryResourceKey(ToolCategory category) => category switch
@@ -125,10 +122,8 @@ public class ToolCategoryItem : INotifyPropertyChanged
     {
         get
         {
-            var app = Application.Current;
-            if (app != null && app.TryGetResource("ToolsFormat", app.ActualThemeVariant, out var value) && value is string fmt)
-                return string.Format(fmt, ToolCount);
-            return $"{ToolCount} tools";
+            var fmt = LanguageManager.GetLocalizedString("ToolsFormat", "{0} tools");
+            return string.Format(fmt, ToolCount);
         }
     }
 

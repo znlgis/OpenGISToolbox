@@ -51,4 +51,12 @@ public class LanguageManager : INotifyPropertyChanged
     {
         SwitchLanguage(language);
     }
+
+    public static string GetLocalizedString(string key, string fallback)
+    {
+        var app = Application.Current;
+        if (app != null && app.TryGetResource(key, app.ActualThemeVariant, out var value) && value is string s)
+            return s;
+        return fallback;
+    }
 }
