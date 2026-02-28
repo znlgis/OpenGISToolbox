@@ -4,8 +4,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using MaxRev.Gdal.Core;
 using OpenGIS.Utils.DataSource;
 using OpenGIS.Utils.Engine.Enums;
 using OpenGIS.Utils.Engine.Model.Layer;
@@ -13,6 +17,7 @@ using OpenGIS.Utils.Engine.Util;
 using OpenGIS.Utils.Geometry;
 using OpenGIS.Utils.Utils;
 using OpenGISToolbox.Models;
+using OSGeo.GDAL;
 
 namespace OpenGISToolbox.Services;
 
@@ -105,6 +110,22 @@ public static class ToolRegistry
         // Utility tools
         tools.Add(CreateZipCompressTool());
         tools.Add(CreateZipExtractTool());
+
+        // Geometry tools (additional)
+        tools.Add(CreateCentralLinesTool());
+
+        // Raster tools
+        tools.Add(CreateRasterFormatConvertTool());
+        tools.Add(CreateRasterCalculatorTool());
+
+        // Remote Sensing tools
+        tools.Add(CreateSatelliteDownloadTool());
+
+        // GPS tools
+        tools.Add(CreateGpxProcessingTool());
+
+        // Geocoding tools
+        tools.Add(CreateGeocodeAddressesTool());
 
         return tools;
     }
@@ -2139,5 +2160,738 @@ public static class ToolRegistry
                 }
             }
         };
+    }
+
+    private static ToolInfo CreateCentralLinesTool()
+    {
+        return new ToolInfo
+        {
+            Id = "central-lines",
+            Name = "Central Lines",
+            Description = "Approximate center lines of polygons using negative buffering",
+            Category = ToolCategory.Geometry,
+            Parameters = new List<ToolParameter>
+            {
+                new()
+                {
+                    Name = "input",
+                    Label = "Input File",
+                    Description = "Input polygon vector file",
+                    Type = ParameterType.InputFile,
+                    Required = true,
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
+                },
+                new()
+                {
+                    Name = "output",
+                    Label = "Output File",
+                    Description = "Output Shapefile with center lines",
+                    Type = ParameterType.OutputFile,
+                    Required = true,
+                    FileFilter = "Shapefile|*.shp"
+                }
+            },
+            ExecuteAsync = async (parameters, progress, ct) =>
+            {
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var inputPath = parameters["input"];
+                    var outputPath = parameters["output"];
+                    var inputFormat = DetectFormat(inputPath);
+
+                    progress?.Report("Reading input layer...");
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
+
+                    progress?.Report("Computing center lines...");
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer.Wkid,
+                        GeometryType = GeometryType.MULTILINESTRING
+                    };
+
+                    foreach (var field in layer.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var processedCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+
+                        var geom = GeometryUtil.Wkt2Geometry(feature.Wkt);
+                        var area = GeometryUtil.Area(geom);
+                        var boundary = GeometryUtil.Boundary(geom);
+                        var boundaryLength = GeometryUtil.Length(boundary);
+
+                        var newFeature = feature.Clone();
+
+                        if (boundaryLength > 0 && area > 0)
+                        {
+                            var approxWidth = 2.0 * area / boundaryLength;
+                            var negativeBuffer = GeometryUtil.Buffer(geom, -approxWidth * 0.45);
+
+                            if (!GeometryUtil.IsEmpty(negativeBuffer))
+                            {
+                                var centerLine = GeometryUtil.Boundary(negativeBuffer);
+                                newFeature.Wkt = GeometryUtil.Geometry2Wkt(centerLine);
+                            }
+                            else
+                            {
+                                var centroid = GeometryUtil.Centroid(geom);
+                                newFeature.Wkt = GeometryUtil.Geometry2Wkt(centroid);
+                            }
+                        }
+                        else
+                        {
+                            var centroid = GeometryUtil.Centroid(geom);
+                            newFeature.Wkt = GeometryUtil.Geometry2Wkt(centroid);
+                        }
+
+                        outputLayer.AddFeature(newFeature);
+                        processedCount++;
+                    }
+
+                    progress?.Report("Writing output layer...");
+                    await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, outputLayer, outputPath), ct);
+
+                    sw.Stop();
+                    return new ToolResult
+                    {
+                        Success = true,
+                        Message = $"Center lines computed for {processedCount} features.",
+                        OutputPath = outputPath,
+                        Duration = sw.Elapsed
+                    };
+                }
+                catch (Exception ex)
+                {
+                    sw.Stop();
+                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                }
+            }
+        };
+    }
+
+    private static ToolInfo CreateRasterFormatConvertTool()
+    {
+        return new ToolInfo
+        {
+            Id = "raster-format-convert",
+            Name = "Raster Format Conversion",
+            Description = "Convert raster data between different formats (GeoTIFF, PNG, JPEG, BMP)",
+            Category = ToolCategory.Raster,
+            Parameters = new List<ToolParameter>
+            {
+                new()
+                {
+                    Name = "input",
+                    Label = "Input Raster File",
+                    Description = "Input raster file",
+                    Type = ParameterType.InputFile,
+                    Required = true,
+                    FileFilter = "Raster files|*.tif;*.tiff;*.png;*.jpg;*.jpeg;*.bmp"
+                },
+                new()
+                {
+                    Name = "output",
+                    Label = "Output Raster File",
+                    Description = "Output raster file",
+                    Type = ParameterType.OutputFile,
+                    Required = true,
+                    FileFilter = "GeoTIFF|*.tif|PNG|*.png|JPEG|*.jpg|BMP|*.bmp"
+                }
+            },
+            ExecuteAsync = async (parameters, progress, ct) =>
+            {
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var inputPath = parameters["input"];
+                    var outputPath = parameters["output"];
+
+                    progress?.Report("Initializing GDAL...");
+                    await Task.Run(() => GdalBase.ConfigureAll(), ct);
+
+                    var ext = Path.GetExtension(outputPath)?.ToLowerInvariant();
+                    var driverName = ext switch
+                    {
+                        ".png" => "PNG",
+                        ".jpg" or ".jpeg" => "JPEG",
+                        ".bmp" => "BMP",
+                        _ => "GTiff"
+                    };
+
+                    progress?.Report($"Opening input raster...");
+                    using var srcDs = Gdal.Open(inputPath, Access.GA_ReadOnly);
+                    if (srcDs == null)
+                        throw new Exception("Failed to open input raster file.");
+
+                    progress?.Report($"Converting to {driverName} format...");
+                    var driver = Gdal.GetDriverByName(driverName);
+                    if (driver == null)
+                        throw new Exception($"GDAL driver '{driverName}' not found.");
+
+                    using var outDs = driver.CreateCopy(outputPath, srcDs, 0, null, null, null);
+                    if (outDs == null)
+                        throw new Exception("Failed to create output raster file.");
+
+                    outDs.FlushCache();
+
+                    sw.Stop();
+                    return new ToolResult
+                    {
+                        Success = true,
+                        Message = $"Raster format conversion completed ({driverName}).",
+                        OutputPath = outputPath,
+                        Duration = sw.Elapsed
+                    };
+                }
+                catch (Exception ex)
+                {
+                    sw.Stop();
+                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                }
+            }
+        };
+    }
+
+    private static ToolInfo CreateRasterCalculatorTool()
+    {
+        return new ToolInfo
+        {
+            Id = "raster-calculator",
+            Name = "Raster Calculator",
+            Description = "Perform band math operations on raster data",
+            Category = ToolCategory.Raster,
+            Parameters = new List<ToolParameter>
+            {
+                new()
+                {
+                    Name = "input",
+                    Label = "Input Raster File",
+                    Description = "Input GeoTIFF raster file",
+                    Type = ParameterType.InputFile,
+                    Required = true,
+                    FileFilter = "GeoTIFF|*.tif;*.tiff"
+                },
+                new()
+                {
+                    Name = "output",
+                    Label = "Output Raster File",
+                    Description = "Output GeoTIFF raster file",
+                    Type = ParameterType.OutputFile,
+                    Required = true,
+                    FileFilter = "GeoTIFF|*.tif"
+                },
+                new()
+                {
+                    Name = "operation",
+                    Label = "Operation",
+                    Description = "Band math operation to perform",
+                    Type = ParameterType.Dropdown,
+                    Required = true,
+                    DefaultValue = "NDVI (Band4-Band3)/(Band4+Band3)",
+                    Options = new[] { "NDVI (Band4-Band3)/(Band4+Band3)", "Scale (Band1 * Factor)", "Offset (Band1 + Value)", "Threshold (Band1 > Value)" }
+                },
+                new()
+                {
+                    Name = "value",
+                    Label = "Value",
+                    Description = "Value for scale factor, offset, or threshold",
+                    Type = ParameterType.Number,
+                    Required = true,
+                    DefaultValue = "1.0"
+                }
+            },
+            ExecuteAsync = async (parameters, progress, ct) =>
+            {
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var inputPath = parameters["input"];
+                    var outputPath = parameters["output"];
+                    var operation = parameters["operation"];
+                    var value = double.Parse(parameters["value"], CultureInfo.InvariantCulture);
+
+                    progress?.Report("Initializing GDAL...");
+                    await Task.Run(() => GdalBase.ConfigureAll(), ct);
+
+                    progress?.Report("Opening input raster...");
+                    using var srcDs = Gdal.Open(inputPath, Access.GA_ReadOnly);
+                    if (srcDs == null)
+                        throw new Exception("Failed to open input raster file.");
+
+                    var width = srcDs.RasterXSize;
+                    var height = srcDs.RasterYSize;
+                    var bandCount = srcDs.RasterCount;
+
+                    progress?.Report($"Raster size: {width}x{height}, {bandCount} bands. Computing...");
+
+                    double[] result = new double[width * height];
+
+                    if (operation.StartsWith("NDVI"))
+                    {
+                        if (bandCount < 4)
+                            throw new Exception("NDVI requires at least 4 bands (Red=Band3, NIR=Band4).");
+
+                        var red = new double[width * height];
+                        var nir = new double[width * height];
+                        srcDs.GetRasterBand(3).ReadRaster(0, 0, width, height, red, width, height, 0, 0);
+                        srcDs.GetRasterBand(4).ReadRaster(0, 0, width, height, nir, width, height, 0, 0);
+
+                        for (int i = 0; i < result.Length; i++)
+                        {
+                            var sum = nir[i] + red[i];
+                            result[i] = sum == 0 ? 0 : (nir[i] - red[i]) / sum;
+                        }
+                    }
+                    else if (operation.StartsWith("Scale"))
+                    {
+                        var band1 = new double[width * height];
+                        srcDs.GetRasterBand(1).ReadRaster(0, 0, width, height, band1, width, height, 0, 0);
+                        for (int i = 0; i < result.Length; i++)
+                            result[i] = band1[i] * value;
+                    }
+                    else if (operation.StartsWith("Offset"))
+                    {
+                        var band1 = new double[width * height];
+                        srcDs.GetRasterBand(1).ReadRaster(0, 0, width, height, band1, width, height, 0, 0);
+                        for (int i = 0; i < result.Length; i++)
+                            result[i] = band1[i] + value;
+                    }
+                    else if (operation.StartsWith("Threshold"))
+                    {
+                        var band1 = new double[width * height];
+                        srcDs.GetRasterBand(1).ReadRaster(0, 0, width, height, band1, width, height, 0, 0);
+                        for (int i = 0; i < result.Length; i++)
+                            result[i] = band1[i] > value ? 1.0 : 0.0;
+                    }
+
+                    progress?.Report("Writing output raster...");
+                    var driver = Gdal.GetDriverByName("GTiff");
+                    if (driver == null)
+                        throw new Exception("GTiff driver not found.");
+
+                    using var outDs = driver.Create(outputPath, width, height, 1, DataType.GDT_Float64, null);
+                    if (outDs == null)
+                        throw new Exception("Failed to create output raster file.");
+
+                    var geoTransform = new double[6];
+                    srcDs.GetGeoTransform(geoTransform);
+                    outDs.SetGeoTransform(geoTransform);
+                    outDs.SetProjection(srcDs.GetProjection());
+
+                    var outBand = outDs.GetRasterBand(1);
+                    outBand.WriteRaster(0, 0, width, height, result, width, height, 0, 0);
+                    outBand.FlushCache();
+                    outDs.FlushCache();
+
+                    sw.Stop();
+                    return new ToolResult
+                    {
+                        Success = true,
+                        Message = $"Raster calculator completed. Operation: {operation}, Value: {value}.",
+                        OutputPath = outputPath,
+                        Duration = sw.Elapsed
+                    };
+                }
+                catch (Exception ex)
+                {
+                    sw.Stop();
+                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                }
+            }
+        };
+    }
+
+    private static ToolInfo CreateSatelliteDownloadTool()
+    {
+        return new ToolInfo
+        {
+            Id = "satellite-download",
+            Name = "Satellite Image Download",
+            Description = "Download satellite imagery tiles from public tile services (OpenStreetMap, Esri World Imagery)",
+            Category = ToolCategory.RemoteSensing,
+            Parameters = new List<ToolParameter>
+            {
+                new()
+                {
+                    Name = "longitude",
+                    Label = "Center Longitude",
+                    Description = "Center longitude in degrees",
+                    Type = ParameterType.Number,
+                    Required = true,
+                    DefaultValue = "116.4"
+                },
+                new()
+                {
+                    Name = "latitude",
+                    Label = "Center Latitude",
+                    Description = "Center latitude in degrees",
+                    Type = ParameterType.Number,
+                    Required = true,
+                    DefaultValue = "39.9"
+                },
+                new()
+                {
+                    Name = "zoom",
+                    Label = "Zoom Level",
+                    Description = "Zoom level (0-19)",
+                    Type = ParameterType.Integer,
+                    Required = true,
+                    DefaultValue = "10"
+                },
+                new()
+                {
+                    Name = "source",
+                    Label = "Tile Source",
+                    Description = "Tile service provider",
+                    Type = ParameterType.Dropdown,
+                    Required = true,
+                    DefaultValue = "OpenStreetMap",
+                    Options = new[] { "OpenStreetMap", "Esri World Imagery" }
+                },
+                new()
+                {
+                    Name = "output",
+                    Label = "Output File",
+                    Description = "Output image file",
+                    Type = ParameterType.OutputFile,
+                    Required = true,
+                    FileFilter = "PNG|*.png"
+                }
+            },
+            ExecuteAsync = async (parameters, progress, ct) =>
+            {
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var lon = double.Parse(parameters["longitude"], CultureInfo.InvariantCulture);
+                    var lat = double.Parse(parameters["latitude"], CultureInfo.InvariantCulture);
+                    var zoom = int.Parse(parameters["zoom"]);
+                    var source = parameters["source"];
+                    var outputPath = parameters["output"];
+
+                    progress?.Report("Computing tile coordinates...");
+                    var n = Math.Pow(2, zoom);
+                    var tileX = (int)Math.Floor((lon + 180.0) / 360.0 * n);
+                    var latRad = lat * Math.PI / 180.0;
+                    var tileY = (int)Math.Floor((1.0 - Math.Log(Math.Tan(latRad) + 1.0 / Math.Cos(latRad)) / Math.PI) / 2.0 * n);
+
+                    var url = source == "Esri World Imagery"
+                        ? $"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{zoom}/{tileY}/{tileX}"
+                        : $"https://tile.openstreetmap.org/{zoom}/{tileX}/{tileY}.png";
+
+                    progress?.Report($"Downloading tile ({tileX}, {tileY}) at zoom {zoom}...");
+                    using var httpClient = new HttpClient();
+                    httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("OpenGISToolbox/1.0");
+
+                    var imageBytes = await httpClient.GetByteArrayAsync(url, ct);
+                    await File.WriteAllBytesAsync(outputPath, imageBytes, ct);
+
+                    sw.Stop();
+                    return new ToolResult
+                    {
+                        Success = true,
+                        Message = $"Tile downloaded from {source}. Tile ({tileX}, {tileY}) at zoom {zoom}. Size: {imageBytes.Length} bytes.",
+                        OutputPath = outputPath,
+                        Duration = sw.Elapsed
+                    };
+                }
+                catch (Exception ex)
+                {
+                    sw.Stop();
+                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                }
+            }
+        };
+    }
+
+    private static ToolInfo CreateGpxProcessingTool()
+    {
+        return new ToolInfo
+        {
+            Id = "gpx-processing",
+            Name = "GPX Processing",
+            Description = "Process GPX files: merge multiple GPX files, extract tracks/waypoints, or convert GPX to GeoJSON",
+            Category = ToolCategory.GPS,
+            Parameters = new List<ToolParameter>
+            {
+                new()
+                {
+                    Name = "input",
+                    Label = "Input GPX File",
+                    Description = "Input GPX file",
+                    Type = ParameterType.InputFile,
+                    Required = true,
+                    FileFilter = "GPX files|*.gpx"
+                },
+                new()
+                {
+                    Name = "operation",
+                    Label = "Operation",
+                    Description = "Processing operation to perform",
+                    Type = ParameterType.Dropdown,
+                    Required = true,
+                    DefaultValue = "Extract Waypoints to CSV",
+                    Options = new[] { "Extract Waypoints to CSV", "Extract Tracks to GeoJSON", "GPX Summary" }
+                },
+                new()
+                {
+                    Name = "output",
+                    Label = "Output File",
+                    Description = "Output file (not required for GPX Summary)",
+                    Type = ParameterType.OutputFile,
+                    Required = false,
+                    FileFilter = "CSV|*.csv|GeoJSON|*.geojson|Text|*.txt"
+                }
+            },
+            ExecuteAsync = async (parameters, progress, ct) =>
+            {
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var inputPath = parameters["input"];
+                    var operation = parameters["operation"];
+                    var outputPath = parameters.GetValueOrDefault("output", "");
+
+                    progress?.Report("Loading GPX file...");
+                    var doc = XDocument.Load(inputPath);
+                    XNamespace gpxNs = "http://www.topografix.com/GPX/1/1";
+
+                    if (operation == "Extract Waypoints to CSV")
+                    {
+                        if (string.IsNullOrWhiteSpace(outputPath))
+                            throw new ArgumentException("Output file is required for this operation.");
+
+                        progress?.Report("Extracting waypoints...");
+                        var waypoints = doc.Descendants(gpxNs + "wpt").ToList();
+                        var lines = new List<string> { "Name,Latitude,Longitude,Elevation,Description" };
+
+                        foreach (var wpt in waypoints)
+                        {
+                            var lat = wpt.Attribute("lat")?.Value ?? "";
+                            var lon = wpt.Attribute("lon")?.Value ?? "";
+                            var name = wpt.Element(gpxNs + "name")?.Value ?? "";
+                            var ele = wpt.Element(gpxNs + "ele")?.Value ?? "";
+                            var desc = wpt.Element(gpxNs + "desc")?.Value ?? "";
+                            lines.Add($"{EscapeCsv(name)},{lat},{lon},{ele},{EscapeCsv(desc)}");
+                        }
+
+                        await File.WriteAllLinesAsync(outputPath, lines, ct);
+
+                        sw.Stop();
+                        return new ToolResult
+                        {
+                            Success = true,
+                            Message = $"Extracted {waypoints.Count} waypoints to CSV.",
+                            OutputPath = outputPath,
+                            Duration = sw.Elapsed
+                        };
+                    }
+                    else if (operation == "Extract Tracks to GeoJSON")
+                    {
+                        if (string.IsNullOrWhiteSpace(outputPath))
+                            throw new ArgumentException("Output file is required for this operation.");
+
+                        progress?.Report("Extracting tracks...");
+                        var tracks = doc.Descendants(gpxNs + "trk").ToList();
+                        var features = new List<object>();
+
+                        foreach (var trk in tracks)
+                        {
+                            var trackName = trk.Element(gpxNs + "name")?.Value ?? "";
+                            var segments = trk.Descendants(gpxNs + "trkseg").ToList();
+
+                            foreach (var seg in segments)
+                            {
+                                var points = seg.Descendants(gpxNs + "trkpt")
+                                    .Select(pt => new[]
+                                    {
+                                        double.Parse(pt.Attribute("lon")?.Value ?? "0", CultureInfo.InvariantCulture),
+                                        double.Parse(pt.Attribute("lat")?.Value ?? "0", CultureInfo.InvariantCulture)
+                                    })
+                                    .ToList();
+
+                                if (points.Count >= 2)
+                                {
+                                    features.Add(new
+                                    {
+                                        type = "Feature",
+                                        properties = new { name = trackName },
+                                        geometry = new
+                                        {
+                                            type = "LineString",
+                                            coordinates = points
+                                        }
+                                    });
+                                }
+                            }
+                        }
+
+                        var geojson = new { type = "FeatureCollection", features };
+                        var json = JsonSerializer.Serialize(geojson, new JsonSerializerOptions { WriteIndented = true });
+                        await File.WriteAllTextAsync(outputPath, json, ct);
+
+                        sw.Stop();
+                        return new ToolResult
+                        {
+                            Success = true,
+                            Message = $"Extracted {features.Count} track segments to GeoJSON.",
+                            OutputPath = outputPath,
+                            Duration = sw.Elapsed
+                        };
+                    }
+                    else // GPX Summary
+                    {
+                        progress?.Report("Analyzing GPX file...");
+                        var waypointCount = doc.Descendants(gpxNs + "wpt").Count();
+                        var trackCount = doc.Descendants(gpxNs + "trk").Count();
+                        var segmentCount = doc.Descendants(gpxNs + "trkseg").Count();
+                        var trackPointCount = doc.Descendants(gpxNs + "trkpt").Count();
+
+                        var message = $"GPX Summary:\n" +
+                                      $"  Waypoints: {waypointCount}\n" +
+                                      $"  Tracks: {trackCount}\n" +
+                                      $"  Track Segments: {segmentCount}\n" +
+                                      $"  Total Track Points: {trackPointCount}";
+
+                        sw.Stop();
+                        return new ToolResult
+                        {
+                            Success = true,
+                            Message = message,
+                            Duration = sw.Elapsed
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    sw.Stop();
+                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                }
+            }
+        };
+    }
+
+    private static ToolInfo CreateGeocodeAddressesTool()
+    {
+        return new ToolInfo
+        {
+            Id = "geocode-addresses",
+            Name = "Geocode Addresses",
+            Description = "Geocode addresses to coordinates using OpenStreetMap Nominatim service",
+            Category = ToolCategory.Geocoding,
+            Parameters = new List<ToolParameter>
+            {
+                new()
+                {
+                    Name = "input",
+                    Label = "Input File",
+                    Description = "Text file with one address per line",
+                    Type = ParameterType.InputFile,
+                    Required = true,
+                    FileFilter = "Text files|*.txt|CSV files|*.csv"
+                },
+                new()
+                {
+                    Name = "output",
+                    Label = "Output CSV File",
+                    Description = "Output CSV file with geocoded coordinates",
+                    Type = ParameterType.OutputFile,
+                    Required = true,
+                    FileFilter = "CSV|*.csv"
+                }
+            },
+            ExecuteAsync = async (parameters, progress, ct) =>
+            {
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    var inputPath = parameters["input"];
+                    var outputPath = parameters["output"];
+
+                    progress?.Report("Reading addresses...");
+                    var lines = await File.ReadAllLinesAsync(inputPath, ct);
+                    var addresses = lines.Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+
+                    if (addresses.Count == 0)
+                        throw new ArgumentException("No addresses found in input file.");
+
+                    var results = new List<string> { "Address,Latitude,Longitude,DisplayName" };
+
+                    using var httpClient = new HttpClient();
+                    httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("OpenGISToolbox/1.0 (github.com/znlgis/OpenGISToolbox)");
+
+                    var geocodedCount = 0;
+                    for (var i = 0; i < addresses.Count; i++)
+                    {
+                        var address = addresses[i].Trim();
+                        progress?.Report($"Geocoding {i + 1}/{addresses.Count}: {address}...");
+
+                        var lat = "";
+                        var lon = "";
+                        var displayName = "";
+
+                        try
+                        {
+                            var encodedAddress = Uri.EscapeDataString(address);
+                            var url = $"https://nominatim.openstreetmap.org/search?q={encodedAddress}&format=json&limit=1";
+                            var response = await httpClient.GetStringAsync(url, ct);
+
+                            using var jsonDoc = JsonDocument.Parse(response);
+                            var root = jsonDoc.RootElement;
+
+                            if (root.GetArrayLength() > 0)
+                            {
+                                var first = root[0];
+                                lat = first.GetProperty("lat").GetString() ?? "";
+                                lon = first.GetProperty("lon").GetString() ?? "";
+                                displayName = first.GetProperty("display_name").GetString() ?? "";
+                                geocodedCount++;
+                            }
+                        }
+                        catch (HttpRequestException)
+                        {
+                            progress?.Report($"  Warning: HTTP request failed for '{address}'.");
+                        }
+                        catch (JsonException)
+                        {
+                            progress?.Report($"  Warning: Failed to parse response for '{address}'.");
+                        }
+
+                        results.Add($"{EscapeCsv(address)},{lat},{lon},{EscapeCsv(displayName)}");
+
+                        if (i < addresses.Count - 1)
+                            await Task.Delay(1000, ct);
+                    }
+
+                    await File.WriteAllLinesAsync(outputPath, results, ct);
+
+                    sw.Stop();
+                    return new ToolResult
+                    {
+                        Success = true,
+                        Message = $"Geocoding completed. {geocodedCount} of {addresses.Count} addresses geocoded.",
+                        OutputPath = outputPath,
+                        Duration = sw.Elapsed
+                    };
+                }
+                catch (Exception ex)
+                {
+                    sw.Stop();
+                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                }
+            }
+        };
+    }
+
+    private static string EscapeCsv(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
     }
 }

@@ -63,6 +63,10 @@ public partial class MainWindowViewModel : ViewModelBase
         ToolCategory.Coordinate => "坐标转换 (Coordinate)",
         ToolCategory.Analysis => "空间分析 (Analysis)",
         ToolCategory.Utility => "实用工具 (Utility)",
+        ToolCategory.Raster => "栅格处理 (Raster)",
+        ToolCategory.RemoteSensing => "遥感 (Remote Sensing)",
+        ToolCategory.GPS => "GPS",
+        ToolCategory.Geocoding => "地理编码 (Geocoding)",
         _ => category.ToString()
     };
 }
