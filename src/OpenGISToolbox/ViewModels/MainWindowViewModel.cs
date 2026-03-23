@@ -123,20 +123,18 @@ public partial class MainWindowViewModel : ViewModelBase
 
 public class ToolCategoryItem : INotifyPropertyChanged
 {
-    private string _displayName = string.Empty;
-
     public ToolCategory Category { get; set; }
 
     public string DisplayName
     {
-        get => _displayName;
+        get;
         set
         {
-            if (_displayName == value) return;
-            _displayName = value;
+            if (field == value) return;
+            field = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayName)));
         }
-    }
+    } = string.Empty;
 
     public int ToolCount { get; set; }
 

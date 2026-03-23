@@ -15,6 +15,7 @@
     <system:String x:Key="ClearLog">Clear Log</system:String>
     <system:String x:Key="SelectFile">Select file...</system:String>
     <system:String x:Key="SelectOutputFile">Select output file...</system:String>
+    <system:String x:Key="SelectFolder">Select folder...</system:String>
     <system:String x:Key="EnterNumber">Enter number...</system:String>
     <system:String x:Key="EnterInteger">Enter integer...</system:String>
     <system:String x:Key="EnterText">Enter text...</system:String>

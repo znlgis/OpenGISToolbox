@@ -15,6 +15,7 @@
     <system:String x:Key="ClearLog">清除日志</system:String>
     <system:String x:Key="SelectFile">选择文件...</system:String>
     <system:String x:Key="SelectOutputFile">选择输出文件...</system:String>
+    <system:String x:Key="SelectFolder">选择文件夹...</system:String>
     <system:String x:Key="EnterNumber">输入数字...</system:String>
     <system:String x:Key="EnterInteger">输入整数...</system:String>
     <system:String x:Key="EnterText">输入文本...</system:String>

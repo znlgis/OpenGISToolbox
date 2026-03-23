@@ -6,6 +6,7 @@ public enum ParameterType
 {
     InputFile,       // File browser for input
     OutputFile,      // File browser for output
+    FolderPath,      // Folder browser
     Number,          // Numeric input
     Text,            // Text input
     Dropdown,        // Dropdown selection

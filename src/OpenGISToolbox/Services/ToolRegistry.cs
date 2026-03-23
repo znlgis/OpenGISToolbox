@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,6 +43,12 @@ public static class ToolRegistry
     }
 
     public static List<ToolInfo> GetAllTools() => CachedTools.Value;
+
+    /// <summary>
+    /// Returns the localized string based on current language setting.
+    /// </summary>
+    private static string L(string en, string zh) =>
+        LanguageManager.Instance.CurrentLanguage == "zh" ? zh : en;
 
     private static List<ToolInfo> BuildAllTools()
     {
@@ -194,17 +201,17 @@ public static class ToolRegistry
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
 
-                    progress?.Report("Reading input file...");
+                    progress?.Report(L("Reading input file...", "读取输入文件..."));
                     var layer = OguLayerUtil.ReadLayer(sourceFormat, inputPath);
 
-                    progress?.Report($"Read {layer.GetFeatureCount()} features. Writing output...");
+                    progress?.Report(L($"Read {layer.GetFeatureCount()} features. Writing output...", $"已读取 {layer.GetFeatureCount()} 个要素，正在写入输出..."));
                     OguLayerUtil.WriteLayer(targetFormat, layer, outputPath);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Conversion completed. {layer.GetFeatureCount()} features converted.",
+                        Message = L($"Conversion completed. {layer.GetFeatureCount()} features converted.", $"转换完成，共转换 {layer.GetFeatureCount()} 个要素。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -212,7 +219,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -225,30 +232,30 @@ public static class ToolRegistry
             Id = "buffer",
             Name = "Buffer",
             NameZh = "缓冲区",
-            Description = "Create a buffer zone around a geometry",
-            DescriptionZh = "在几何体周围创建缓冲区",
+            Description = "Create buffer zones around all features in a vector layer",
+            DescriptionZh = "为矢量图层中的所有要素创建缓冲区",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
@@ -269,20 +276,41 @@ public static class ToolRegistry
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
                     var distance = double.Parse(parameters["distance"], CultureInfo.InvariantCulture);
+                    var inputFormat = DetectFormat(inputPath);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = await File.ReadAllTextAsync(inputPath, ct);
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Applying buffer operation...");
-                    var result = GeometryUtil.BufferWkt(wkt.Trim(), distance);
+                    progress?.Report(L($"Applying buffer (distance={distance}) to {layer.GetFeatureCount()} features...", $"正在对 {layer.GetFeatureCount()} 个要素应用缓冲区（距离={distance}）..."));
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer.Wkid,
+                        GeometryType = GeometryType.POLYGON
+                    };
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    foreach (var field in layer.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var processedCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var newFeature = feature.Clone();
+                        newFeature.Wkt = GeometryUtil.BufferWkt(feature.Wkt, distance);
+                        outputLayer.AddFeature(newFeature);
+                        processedCount++;
+                    }
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Buffer operation completed with distance {distance}.",
+                        Message = L($"Buffer completed. {processedCount} features buffered with distance {distance}.", $"缓冲区完成。{processedCount} 个要素已缓冲，距离 {distance}。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -290,7 +318,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -303,40 +331,40 @@ public static class ToolRegistry
             Id = "union",
             Name = "Union",
             NameZh = "合并",
-            Description = "Compute the union of two geometries",
-            DescriptionZh = "计算两个几何体的并集",
+            Description = "Compute the geometric union of two vector layers",
+            DescriptionZh = "计算两个矢量图层的几何并集",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input1",
-                    Label = "First WKT File",
-                    LabelZh = "第一个WKT文件",
-                    Description = "Text file containing the first WKT geometry",
+                    Label = "First Input File",
+                    LabelZh = "第一个输入文件",
+                    Description = "First input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "input2",
-                    Label = "Second WKT File",
-                    LabelZh = "第二个WKT文件",
-                    Description = "Text file containing the second WKT geometry",
+                    Label = "Second Input File",
+                    LabelZh = "第二个输入文件",
+                    Description = "Second input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file with unioned geometries",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -347,21 +375,42 @@ public static class ToolRegistry
                     var inputPath1 = parameters["input1"];
                     var inputPath2 = parameters["input2"];
                     var outputPath = parameters["output"];
+                    var format1 = DetectFormat(inputPath1);
+                    var format2 = DetectFormat(inputPath2);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometries...");
-                    var wkt1 = (await File.ReadAllTextAsync(inputPath1, ct)).Trim();
-                    var wkt2 = (await File.ReadAllTextAsync(inputPath2, ct)).Trim();
+                    progress?.Report(L("Reading first layer...", "读取第一个图层..."));
+                    var layer1 = await Task.Run(() => OguLayerUtil.ReadLayer(format1, inputPath1), ct);
 
-                    progress?.Report("Computing union...");
-                    var result = GeometryUtil.UnionWkt(new[] { wkt1, wkt2 });
+                    progress?.Report(L("Reading second layer...", "读取第二个图层..."));
+                    var layer2 = await Task.Run(() => OguLayerUtil.ReadLayer(format2, inputPath2), ct);
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    progress?.Report(L("Computing union of all geometries...", "计算所有几何体的并集..."));
+                    var allWkts = layer1.Features
+                        .Concat(layer2.Features)
+                        .Where(f => !string.IsNullOrWhiteSpace(f.Wkt))
+                        .Select(f => f.Wkt!)
+                        .ToList();
+
+                    var unionWkt = GeometryUtil.UnionWkt(allWkts);
+
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer1.Wkid,
+                        GeometryType = layer1.GeometryType
+                    };
+
+                    outputLayer.AddFeature(new OguFeature { Fid = 0, Wkt = unionWkt });
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Union operation completed.",
+                        Message = L($"Union completed. {allWkts.Count} geometries merged into 1 feature.", $"合并完成。{allWkts.Count} 个几何体合并为 1 个要素。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -369,7 +418,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -382,40 +431,40 @@ public static class ToolRegistry
             Id = "intersection",
             Name = "Intersection",
             NameZh = "交集",
-            Description = "Compute the intersection of two geometries",
-            DescriptionZh = "计算两个几何体的交集",
+            Description = "Compute the geometric intersection of two vector layers",
+            DescriptionZh = "计算两个矢量图层的几何交集",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input1",
-                    Label = "First WKT File",
-                    LabelZh = "第一个WKT文件",
-                    Description = "Text file containing the first WKT geometry",
+                    Label = "First Input File",
+                    LabelZh = "第一个输入文件",
+                    Description = "First input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "input2",
-                    Label = "Second WKT File",
-                    LabelZh = "第二个WKT文件",
-                    Description = "Text file containing the second WKT geometry",
+                    Label = "Second Input File",
+                    LabelZh = "第二个输入文件",
+                    Description = "Second input vector file (overlay layer)",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file with intersected geometries",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -426,21 +475,57 @@ public static class ToolRegistry
                     var inputPath1 = parameters["input1"];
                     var inputPath2 = parameters["input2"];
                     var outputPath = parameters["output"];
+                    var format1 = DetectFormat(inputPath1);
+                    var format2 = DetectFormat(inputPath2);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometries...");
-                    var wkt1 = (await File.ReadAllTextAsync(inputPath1, ct)).Trim();
-                    var wkt2 = (await File.ReadAllTextAsync(inputPath2, ct)).Trim();
+                    progress?.Report(L("Reading first layer...", "读取第一个图层..."));
+                    var layer1 = await Task.Run(() => OguLayerUtil.ReadLayer(format1, inputPath1), ct);
 
-                    progress?.Report("Computing intersection...");
-                    var result = GeometryUtil.IntersectionWkt(wkt1, wkt2);
+                    progress?.Report(L("Reading second layer...", "读取第二个图层..."));
+                    var layer2 = await Task.Run(() => OguLayerUtil.ReadLayer(format2, inputPath2), ct);
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    progress?.Report(L("Computing overlay geometry union...", "计算叠加几何体并集..."));
+                    var overlayWkts = layer2.Features
+                        .Where(f => !string.IsNullOrWhiteSpace(f.Wkt))
+                        .Select(f => f.Wkt!)
+                        .ToList();
+                    var overlayGeom = GeometryUtil.Wkt2Geometry(GeometryUtil.UnionWkt(overlayWkts));
+
+                    progress?.Report(L("Computing intersection for each feature...", "计算每个要素的交集..."));
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer1.Wkid,
+                        GeometryType = layer1.GeometryType
+                    };
+
+                    foreach (var field in layer1.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var retainedCount = 0;
+                    foreach (var feature in layer1.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var geom = GeometryUtil.Wkt2Geometry(feature.Wkt);
+                        var intersected = GeometryUtil.Intersection(geom, overlayGeom);
+                        if (!GeometryUtil.IsEmpty(intersected))
+                        {
+                            var newFeature = feature.Clone();
+                            newFeature.Wkt = GeometryUtil.Geometry2Wkt(intersected);
+                            outputLayer.AddFeature(newFeature);
+                            retainedCount++;
+                        }
+                    }
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Intersection operation completed.",
+                        Message = L($"Intersection completed. {retainedCount} of {layer1.GetFeatureCount()} features intersected.", $"交集完成。{layer1.GetFeatureCount()} 个要素中有 {retainedCount} 个相交。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -448,7 +533,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -461,40 +546,40 @@ public static class ToolRegistry
             Id = "difference",
             Name = "Difference",
             NameZh = "差集",
-            Description = "Compute the difference of two geometries (A minus B)",
-            DescriptionZh = "计算两个几何体的差集（A 减去 B）",
+            Description = "Compute the geometric difference of two vector layers (A minus B)",
+            DescriptionZh = "计算两个矢量图层的几何差集（A 减去 B）",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input1",
-                    Label = "First WKT File (A)",
-                    LabelZh = "第一个WKT文件 (A)",
-                    Description = "Text file containing the first WKT geometry",
+                    Label = "Input File (A)",
+                    LabelZh = "输入文件 (A)",
+                    Description = "Input vector file (features to subtract from)",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "input2",
-                    Label = "Second WKT File (B)",
-                    LabelZh = "第二个WKT文件 (B)",
-                    Description = "Text file containing the second WKT geometry",
+                    Label = "Erase File (B)",
+                    LabelZh = "擦除文件 (B)",
+                    Description = "Erase vector file (geometry to subtract)",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file with difference geometries",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -505,24 +590,57 @@ public static class ToolRegistry
                     var inputPath1 = parameters["input1"];
                     var inputPath2 = parameters["input2"];
                     var outputPath = parameters["output"];
+                    var format1 = DetectFormat(inputPath1);
+                    var format2 = DetectFormat(inputPath2);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometries...");
-                    var wkt1 = (await File.ReadAllTextAsync(inputPath1, ct)).Trim();
-                    var wkt2 = (await File.ReadAllTextAsync(inputPath2, ct)).Trim();
+                    progress?.Report(L("Reading input layer (A)...", "读取输入图层 (A)..."));
+                    var layer1 = await Task.Run(() => OguLayerUtil.ReadLayer(format1, inputPath1), ct);
 
-                    progress?.Report("Computing difference...");
-                    var geomA = GeometryUtil.Wkt2Geometry(wkt1);
-                    var geomB = GeometryUtil.Wkt2Geometry(wkt2);
-                    var diff = GeometryUtil.Difference(geomA, geomB);
-                    var result = GeometryUtil.Geometry2Wkt(diff);
+                    progress?.Report(L("Reading erase layer (B)...", "读取擦除图层 (B)..."));
+                    var layer2 = await Task.Run(() => OguLayerUtil.ReadLayer(format2, inputPath2), ct);
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    progress?.Report(L("Computing erase geometry union...", "计算擦除几何体并集..."));
+                    var eraseWkts = layer2.Features
+                        .Where(f => !string.IsNullOrWhiteSpace(f.Wkt))
+                        .Select(f => f.Wkt!)
+                        .ToList();
+                    var eraseGeom = GeometryUtil.Wkt2Geometry(GeometryUtil.UnionWkt(eraseWkts));
+
+                    progress?.Report(L("Computing difference for each feature...", "计算每个要素的差集..."));
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer1.Wkid,
+                        GeometryType = layer1.GeometryType
+                    };
+
+                    foreach (var field in layer1.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var retainedCount = 0;
+                    foreach (var feature in layer1.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var geom = GeometryUtil.Wkt2Geometry(feature.Wkt);
+                        var diff = GeometryUtil.Difference(geom, eraseGeom);
+                        if (!GeometryUtil.IsEmpty(diff))
+                        {
+                            var newFeature = feature.Clone();
+                            newFeature.Wkt = GeometryUtil.Geometry2Wkt(diff);
+                            outputLayer.AddFeature(newFeature);
+                            retainedCount++;
+                        }
+                    }
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Difference operation completed.",
+                        Message = L($"Difference completed. {retainedCount} of {layer1.GetFeatureCount()} features retained.", $"差集完成。{layer1.GetFeatureCount()} 个要素中保留了 {retainedCount} 个。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -530,7 +648,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -543,30 +661,30 @@ public static class ToolRegistry
             Id = "convex-hull",
             Name = "Convex Hull",
             NameZh = "凸包",
-            Description = "Compute the convex hull of a geometry",
-            DescriptionZh = "计算几何体的凸包",
+            Description = "Compute the convex hull of each feature in a vector layer",
+            DescriptionZh = "计算矢量图层中每个要素的凸包",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file with convex hull geometries",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -576,22 +694,43 @@ public static class ToolRegistry
                 {
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
+                    var inputFormat = DetectFormat(inputPath);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Computing convex hull...");
-                    var geom = GeometryUtil.Wkt2Geometry(wkt);
-                    var hull = GeometryUtil.ConvexHull(geom);
-                    var result = GeometryUtil.Geometry2Wkt(hull);
+                    progress?.Report(L($"Computing convex hull for {layer.GetFeatureCount()} features...", $"正在计算 {layer.GetFeatureCount()} 个要素的凸包..."));
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer.Wkid,
+                        GeometryType = GeometryType.POLYGON
+                    };
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    foreach (var field in layer.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var processedCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var geom = GeometryUtil.Wkt2Geometry(feature.Wkt);
+                        var hull = GeometryUtil.ConvexHull(geom);
+                        var newFeature = feature.Clone();
+                        newFeature.Wkt = GeometryUtil.Geometry2Wkt(hull);
+                        outputLayer.AddFeature(newFeature);
+                        processedCount++;
+                    }
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Convex hull operation completed.",
+                        Message = L($"Convex hull completed for {processedCount} features.", $"凸包计算完成，共处理 {processedCount} 个要素。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -599,7 +738,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -612,30 +751,30 @@ public static class ToolRegistry
             Id = "centroid",
             Name = "Centroid",
             NameZh = "质心",
-            Description = "Compute the centroid of a geometry",
-            DescriptionZh = "计算几何体的质心",
+            Description = "Compute the centroid of each feature in a vector layer",
+            DescriptionZh = "计算矢量图层中每个要素的质心",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output point vector file with centroids",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -645,20 +784,41 @@ public static class ToolRegistry
                 {
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
+                    var inputFormat = DetectFormat(inputPath);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Computing centroid...");
-                    var result = GeometryUtil.CentroidWkt(wkt);
+                    progress?.Report(L($"Computing centroids for {layer.GetFeatureCount()} features...", $"正在计算 {layer.GetFeatureCount()} 个要素的质心..."));
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer.Wkid,
+                        GeometryType = GeometryType.POINT
+                    };
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    foreach (var field in layer.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var processedCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var newFeature = feature.Clone();
+                        newFeature.Wkt = GeometryUtil.CentroidWkt(feature.Wkt);
+                        outputLayer.AddFeature(newFeature);
+                        processedCount++;
+                    }
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Centroid operation completed.",
+                        Message = L($"Centroid completed for {processedCount} features.", $"质心计算完成，共处理 {processedCount} 个要素。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -666,7 +826,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -679,37 +839,37 @@ public static class ToolRegistry
             Id = "simplify",
             Name = "Simplify",
             NameZh = "简化",
-            Description = "Simplify a geometry using the Douglas-Peucker algorithm",
-            DescriptionZh = "使用 Douglas-Peucker 算法简化几何体",
+            Description = "Simplify geometries in a vector layer using the Douglas-Peucker algorithm",
+            DescriptionZh = "使用 Douglas-Peucker 算法简化矢量图层中的几何体",
             Category = ToolCategory.Geometry,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the result WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file with simplified geometries",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "tolerance",
                     Label = "Tolerance",
                     LabelZh = "容差",
-                    Description = "Simplification tolerance",
+                    Description = "Simplification tolerance (in coordinate system units)",
                     Type = ParameterType.Number,
                     Required = true,
                     DefaultValue = "0.001"
@@ -723,20 +883,41 @@ public static class ToolRegistry
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
                     var tolerance = double.Parse(parameters["tolerance"], CultureInfo.InvariantCulture);
+                    var inputFormat = DetectFormat(inputPath);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Simplifying geometry...");
-                    var result = GeometryUtil.SimplifyWkt(wkt, tolerance);
+                    progress?.Report(L($"Simplifying {layer.GetFeatureCount()} features (tolerance={tolerance})...", $"正在简化 {layer.GetFeatureCount()} 个要素（容差={tolerance}）..."));
+                    var outputLayer = new OguLayer
+                    {
+                        Name = Path.GetFileNameWithoutExtension(outputPath),
+                        Wkid = layer.Wkid,
+                        GeometryType = layer.GeometryType
+                    };
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    foreach (var field in layer.Fields)
+                        outputLayer.AddField(field.Clone());
+
+                    var processedCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var newFeature = feature.Clone();
+                        newFeature.Wkt = GeometryUtil.SimplifyWkt(feature.Wkt, tolerance);
+                        outputLayer.AddFeature(newFeature);
+                        processedCount++;
+                    }
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Simplify operation completed with tolerance {tolerance}.",
+                        Message = L($"Simplify completed. {processedCount} features simplified with tolerance {tolerance}.", $"简化完成。{processedCount} 个要素已简化，容差 {tolerance}。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -744,7 +925,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -757,20 +938,20 @@ public static class ToolRegistry
             Id = "check-geometry",
             Name = "Check Geometry",
             NameZh = "检查几何",
-            Description = "Validate the geometry and report whether it is valid",
-            DescriptionZh = "验证几何体并报告是否有效",
+            Description = "Validate geometries in a vector layer and report issues",
+            DescriptionZh = "验证矢量图层中的几何体并报告问题",
             Category = ToolCategory.Validation,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file to validate",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -779,30 +960,75 @@ public static class ToolRegistry
                 try
                 {
                     var inputPath = parameters["input"];
+                    var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Validating geometry...");
-                    var geom = GeometryUtil.Wkt2Geometry(wkt);
-                    var isValid = GeometryUtil.IsValid(geom);
-                    var isSimple = GeometryUtil.IsSimple(geom);
-                    var geomType = GeometryUtil.GetGeometryType(geom);
+                    progress?.Report(L($"Validating {layer.GetFeatureCount()} features...", $"正在验证 {layer.GetFeatureCount()} 个要素..."));
+                    var totalCount = 0;
+                    var validCount = 0;
+                    var invalidCount = 0;
+                    var emptyCount = 0;
+                    var invalidDetails = new List<string>();
 
-                    var message = $"Geometry Type: {geomType}\nIs Valid: {isValid}\nIs Simple: {isSimple}";
+                    foreach (var feature in layer.Features)
+                    {
+                        totalCount++;
+                        if (string.IsNullOrWhiteSpace(feature.Wkt))
+                        {
+                            emptyCount++;
+                            continue;
+                        }
+
+                        var geom = GeometryUtil.Wkt2Geometry(feature.Wkt);
+                        var validResult = GeometryUtil.IsValid(geom);
+
+                        if (validResult.IsValid)
+                        {
+                            validCount++;
+                        }
+                        else
+                        {
+                            invalidCount++;
+                            var reason = !string.IsNullOrWhiteSpace(validResult.ErrorMessage)
+                                ? validResult.ErrorMessage
+                                : L("Unknown validation error", "未知验证错误");
+                            invalidDetails.Add($"  FID {feature.Fid}: {reason}");
+                        }
+                    }
+
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine(L("Geometry Validation Report:", "几何验证报告："));
+                    sb.AppendLine(L($"  Total features: {totalCount}", $"  总要素数：{totalCount}"));
+                    sb.AppendLine(L($"  Valid: {validCount}", $"  有效：{validCount}"));
+                    sb.AppendLine(L($"  Invalid: {invalidCount}", $"  无效：{invalidCount}"));
+                    if (emptyCount > 0)
+                        sb.AppendLine(L($"  Empty/null geometry: {emptyCount}", $"  空几何体：{emptyCount}"));
+
+                    if (invalidDetails.Count > 0)
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine(L("Invalid features:", "无效要素："));
+                        var limit = Math.Min(invalidDetails.Count, 20);
+                        for (var i = 0; i < limit; i++)
+                            sb.AppendLine(invalidDetails[i]);
+                        if (invalidDetails.Count > 20)
+                            sb.AppendLine(L($"  ... and {invalidDetails.Count - 20} more", $"  ... 以及其他 {invalidDetails.Count - 20} 个"));
+                    }
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = message,
+                        Message = sb.ToString().TrimEnd(),
                         Duration = sw.Elapsed
                     };
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -815,30 +1041,30 @@ public static class ToolRegistry
             Id = "reproject",
             Name = "Reproject",
             NameZh = "重投影",
-            Description = "Transform coordinates from one coordinate system to another",
-            DescriptionZh = "将坐标从一个坐标系转换到另一个坐标系",
+            Description = "Transform a vector layer from one coordinate system to another",
+            DescriptionZh = "将矢量图层从一个坐标系转换到另一个坐标系",
             Category = ToolCategory.Coordinate,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
                     Name = "output",
-                    Label = "Output WKT File",
-                    LabelZh = "输出WKT文件",
-                    Description = "Output text file for the transformed WKT",
+                    Label = "Output File",
+                    LabelZh = "输出文件",
+                    Description = "Output vector file",
                     Type = ParameterType.OutputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 },
                 new()
                 {
@@ -870,20 +1096,29 @@ public static class ToolRegistry
                     var outputPath = parameters["output"];
                     var sourceWkid = int.Parse(parameters["sourceWkid"]);
                     var targetWkid = int.Parse(parameters["targetWkid"]);
+                    var inputFormat = DetectFormat(inputPath);
+                    var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report($"Transforming from WKID {sourceWkid} to {targetWkid}...");
-                    var result = CrsUtil.Transform(wkt, sourceWkid, targetWkid);
+                    progress?.Report(L($"Reprojecting {layer.GetFeatureCount()} features from WKID {sourceWkid} to {targetWkid}...", $"正在将 {layer.GetFeatureCount()} 个要素从 WKID {sourceWkid} 重投影到 {targetWkid}..."));
+                    foreach (var feature in layer.Features)
+                    {
+                        if (!string.IsNullOrWhiteSpace(feature.Wkt))
+                            feature.Wkt = CrsUtil.Transform(feature.Wkt, sourceWkid, targetWkid);
+                    }
 
-                    await File.WriteAllTextAsync(outputPath, result, ct);
+                    layer.Wkid = targetWkid;
+
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
+                    await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, layer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Reprojection completed from WKID {sourceWkid} to {targetWkid}.",
+                        Message = L($"Reprojection completed. {layer.GetFeatureCount()} features transformed from WKID {sourceWkid} to {targetWkid}.", $"重投影完成。{layer.GetFeatureCount()} 个要素已从 WKID {sourceWkid} 转换到 {targetWkid}。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -891,7 +1126,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -904,20 +1139,20 @@ public static class ToolRegistry
             Id = "calculate-area",
             Name = "Calculate Area",
             NameZh = "计算面积",
-            Description = "Calculate the area of a geometry",
-            DescriptionZh = "计算几何体的面积",
+            Description = "Calculate the area of each feature in a vector layer",
+            DescriptionZh = "计算矢量图层中每个要素的面积",
             Category = ToolCategory.Analysis,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file (polygon layer)",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -926,25 +1161,65 @@ public static class ToolRegistry
                 try
                 {
                     var inputPath = parameters["input"];
+                    var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Calculating area...");
-                    var area = GeometryUtil.AreaWkt(wkt);
+                    var featureCount = layer.GetFeatureCount();
+                    if (featureCount == 0)
+                    {
+                        sw.Stop();
+                        return new ToolResult
+                        {
+                            Success = true,
+                            Message = L("The layer contains no features.", "图层不包含任何要素。"),
+                            Duration = sw.Elapsed
+                        };
+                    }
+
+                    progress?.Report(L($"Calculating area for {featureCount} features...", $"正在计算 {featureCount} 个要素的面积..."));
+                    var totalArea = 0.0;
+                    var sb = new StringBuilder();
+                    sb.AppendLine(L($"Layer: {layer.Name ?? Path.GetFileNameWithoutExtension(inputPath)}", $"图层：{layer.Name ?? Path.GetFileNameWithoutExtension(inputPath)}"));
+                    sb.AppendLine(L($"Features: {featureCount}", $"要素数：{featureCount}"));
+                    sb.AppendLine(new string('-', 40));
+
+                    var maxDetailRows = 50;
+                    var detailCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var area = GeometryUtil.AreaWkt(feature.Wkt);
+                        totalArea += area;
+
+                        if (detailCount < maxDetailRows)
+                        {
+                            sb.AppendLine($"  FID {feature.Fid}: {area:N6}");
+                        }
+                        detailCount++;
+                    }
+
+                    if (detailCount > maxDetailRows)
+                    {
+                        sb.AppendLine(L($"  ... and {detailCount - maxDetailRows} more features", $"  ... 以及其他 {detailCount - maxDetailRows} 个要素"));
+                    }
+
+                    sb.AppendLine(new string('-', 40));
+                    sb.AppendLine(L($"Total Area: {totalArea:N6} (coordinate system units²)", $"总面积：{totalArea:N6}（坐标系单位²）"));
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Area: {area} (in coordinate system units²)",
+                        Message = sb.ToString(),
                         Duration = sw.Elapsed
                     };
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -957,20 +1232,20 @@ public static class ToolRegistry
             Id = "calculate-length",
             Name = "Calculate Length",
             NameZh = "计算长度",
-            Description = "Calculate the length of a geometry",
-            DescriptionZh = "计算几何体的长度",
+            Description = "Calculate the length of each feature in a vector layer",
+            DescriptionZh = "计算矢量图层中每个要素的长度",
             Category = ToolCategory.Analysis,
             Parameters = new List<ToolParameter>
             {
                 new()
                 {
                     Name = "input",
-                    Label = "Input WKT File",
-                    LabelZh = "输入WKT文件",
-                    Description = "Text file containing WKT geometry",
+                    Label = "Input File",
+                    LabelZh = "输入文件",
+                    Description = "Input vector file (line or polygon layer)",
                     Type = ParameterType.InputFile,
                     Required = true,
-                    FileFilter = "Text files|*.txt"
+                    FileFilter = "Shapefile|*.shp|GeoJSON|*.geojson|GeoPackage|*.gpkg"
                 }
             },
             ExecuteAsync = async (parameters, progress, ct) =>
@@ -979,25 +1254,65 @@ public static class ToolRegistry
                 try
                 {
                     var inputPath = parameters["input"];
+                    var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading WKT geometry...");
-                    var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
+                    var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Calculating length...");
-                    var length = GeometryUtil.LengthWkt(wkt);
+                    var featureCount = layer.GetFeatureCount();
+                    if (featureCount == 0)
+                    {
+                        sw.Stop();
+                        return new ToolResult
+                        {
+                            Success = true,
+                            Message = L("The layer contains no features.", "图层不包含任何要素。"),
+                            Duration = sw.Elapsed
+                        };
+                    }
+
+                    progress?.Report(L($"Calculating length for {featureCount} features...", $"正在计算 {featureCount} 个要素的长度..."));
+                    var totalLength = 0.0;
+                    var sb = new StringBuilder();
+                    sb.AppendLine(L($"Layer: {layer.Name ?? Path.GetFileNameWithoutExtension(inputPath)}", $"图层：{layer.Name ?? Path.GetFileNameWithoutExtension(inputPath)}"));
+                    sb.AppendLine(L($"Features: {featureCount}", $"要素数：{featureCount}"));
+                    sb.AppendLine(new string('-', 40));
+
+                    var maxDetailRows = 50;
+                    var detailCount = 0;
+                    foreach (var feature in layer.Features)
+                    {
+                        if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+                        var length = GeometryUtil.LengthWkt(feature.Wkt);
+                        totalLength += length;
+
+                        if (detailCount < maxDetailRows)
+                        {
+                            sb.AppendLine($"  FID {feature.Fid}: {length:N6}");
+                        }
+                        detailCount++;
+                    }
+
+                    if (detailCount > maxDetailRows)
+                    {
+                        sb.AppendLine(L($"  ... and {detailCount - maxDetailRows} more features", $"  ... 以及其他 {detailCount - maxDetailRows} 个要素"));
+                    }
+
+                    sb.AppendLine(new string('-', 40));
+                    sb.AppendLine(L($"Total Length: {totalLength:N6} (coordinate system units)", $"总长度：{totalLength:N6}（坐标系单位）"));
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Length: {length} (in coordinate system units)",
+                        Message = sb.ToString(),
                         Duration = sw.Elapsed
                     };
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1021,7 +1336,7 @@ public static class ToolRegistry
                     Label = "Input Folder",
                     LabelZh = "输入文件夹",
                     Description = "Folder to compress",
-                    Type = ParameterType.Text,
+                    Type = ParameterType.FolderPath,
                     Required = true
                 },
                 new()
@@ -1043,14 +1358,14 @@ public static class ToolRegistry
                     var inputFolder = parameters["input"];
                     var outputPath = parameters["output"];
 
-                    progress?.Report("Compressing folder...");
+                    progress?.Report(L("Compressing folder...", "正在压缩文件夹..."));
                     await Task.Run(() => ZipUtil.Zip(inputFolder, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Compression completed.",
+                        Message = L("Compression completed.", "压缩完成。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -1058,7 +1373,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1092,7 +1407,7 @@ public static class ToolRegistry
                     Label = "Output Folder",
                     LabelZh = "输出文件夹",
                     Description = "Destination folder for extraction",
-                    Type = ParameterType.Text,
+                    Type = ParameterType.FolderPath,
                     Required = true
                 }
             },
@@ -1104,14 +1419,14 @@ public static class ToolRegistry
                     var inputPath = parameters["input"];
                     var outputFolder = parameters["output"];
 
-                    progress?.Report("Extracting ZIP archive...");
+                    progress?.Report(L("Extracting ZIP archive...", "正在解压 ZIP 归档..."));
                     await Task.Run(() => ZipUtil.Unzip(inputPath, outputFolder), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = "Extraction completed.",
+                        Message = L("Extraction completed.", "解压完成。"),
                         OutputPath = outputFolder,
                         Duration = sw.Elapsed
                     };
@@ -1119,7 +1434,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1226,19 +1541,19 @@ public static class ToolRegistry
                     var delimiter = parameters["delimiter"];
                     var wkid = int.Parse(parameters["wkid"]);
 
-                    progress?.Report("Reading CSV file...");
+                    progress?.Report(L("Reading CSV file...", "读取 CSV 文件..."));
                     var lines = await File.ReadAllLinesAsync(inputPath, ct);
                     if (lines.Length < 2)
-                        throw new ArgumentException("CSV file must have a header row and at least one data row.");
+                        throw new ArgumentException(L("CSV file must have a header row and at least one data row.", "CSV 文件必须包含标题行和至少一行数据。"));
 
                     var headers = lines[0].Split(delimiter);
                     var xIndex = Array.IndexOf(headers, xField);
                     var yIndex = Array.IndexOf(headers, yField);
 
                     if (xIndex < 0)
-                        throw new ArgumentException($"Column '{xField}' not found in CSV header.");
+                        throw new ArgumentException(L($"Column '{xField}' not found in CSV header.", $"CSV 标题中未找到列 '{xField}'。"));
                     if (yIndex < 0)
-                        throw new ArgumentException($"Column '{yField}' not found in CSV header.");
+                        throw new ArgumentException(L($"Column '{yField}' not found in CSV header.", $"CSV 标题中未找到列 '{yField}'。"));
 
                     var layer = new OguLayer
                     {
@@ -1253,7 +1568,7 @@ public static class ToolRegistry
                         layer.AddField(new OguField { Name = headers[i], DataType = FieldDataType.STRING });
                     }
 
-                    progress?.Report("Creating features...");
+                    progress?.Report(L("Creating features...", "创建要素..."));
                     var fid = 0;
                     var skippedCount = 0;
                     for (var i = 1; i < lines.Length; i++)
@@ -1269,9 +1584,9 @@ public static class ToolRegistry
                         }
 
                         if (!double.TryParse(values[xIndex], NumberStyles.Float, CultureInfo.InvariantCulture, out var x))
-                            throw new FormatException($"Row {i + 1}: cannot parse X value '{values[xIndex]}' in column '{xField}'.");
+                            throw new FormatException(L($"Row {i + 1}: cannot parse X value '{values[xIndex]}' in column '{xField}'.", $"第 {i + 1} 行：无法解析列 '{xField}' 中的 X 值 '{values[xIndex]}'。"));
                         if (!double.TryParse(values[yIndex], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
-                            throw new FormatException($"Row {i + 1}: cannot parse Y value '{values[yIndex]}' in column '{yField}'.");
+                            throw new FormatException(L($"Row {i + 1}: cannot parse Y value '{values[yIndex]}' in column '{yField}'.", $"第 {i + 1} 行：无法解析列 '{yField}' 中的 Y 值 '{values[yIndex]}'。"));
 
                         var feature = new OguFeature
                         {
@@ -1288,15 +1603,16 @@ public static class ToolRegistry
                         layer.AddFeature(feature);
                     }
 
-                    progress?.Report($"Writing {layer.GetFeatureCount()} features to Shapefile...");
+                    progress?.Report(L($"Writing {layer.GetFeatureCount()} features to Shapefile...", $"正在将 {layer.GetFeatureCount()} 个要素写入 Shapefile..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, layer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Conversion completed. {layer.GetFeatureCount()} features created from CSV." +
-                            (skippedCount > 0 ? $" {skippedCount} rows skipped due to column count mismatch." : ""),
+                        Message = L(
+                            $"Conversion completed. {layer.GetFeatureCount()} features created from CSV." + (skippedCount > 0 ? $" {skippedCount} rows skipped due to column count mismatch." : ""),
+                            $"转换完成。从 CSV 创建了 {layer.GetFeatureCount()} 个要素。" + (skippedCount > 0 ? $" 因列数不匹配跳过了 {skippedCount} 行。" : "")),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -1304,7 +1620,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1353,10 +1669,10 @@ public static class ToolRegistry
                     var inputFormat = DetectFormat(inputPath);
                     var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading input layer...");
+                    progress?.Report(L("Reading input layer...", "读取输入图层..."));
                     var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Fixing geometries...");
+                    progress?.Report(L("Fixing geometries...", "修复几何体..."));
                     var fixedCount = 0;
                     foreach (var feature in layer.Features)
                     {
@@ -1370,14 +1686,14 @@ public static class ToolRegistry
                         }
                     }
 
-                    progress?.Report("Writing output layer...");
+                    progress?.Report(L("Writing output layer...", "写入输出图层..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, layer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Fix geometries completed. {fixedCount} of {layer.GetFeatureCount()} geometries were fixed.",
+                        Message = L($"Fix geometries completed. {fixedCount} of {layer.GetFeatureCount()} geometries were fixed.", $"几何修复完成。{layer.GetFeatureCount()} 个几何体中修复了 {fixedCount} 个。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -1385,7 +1701,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1445,13 +1761,13 @@ public static class ToolRegistry
                     var format1 = DetectFormat(inputPath1);
                     var format2 = DetectFormat(inputPath2);
 
-                    progress?.Report("Reading first layer...");
+                    progress?.Report(L("Reading first layer...", "读取第一个图层..."));
                     var layer1 = await Task.Run(() => OguLayerUtil.ReadLayer(format1, inputPath1), ct);
 
-                    progress?.Report("Reading second layer...");
+                    progress?.Report(L("Reading second layer...", "读取第二个图层..."));
                     var layer2 = await Task.Run(() => OguLayerUtil.ReadLayer(format2, inputPath2), ct);
 
-                    progress?.Report("Merging layers...");
+                    progress?.Report(L("Merging layers...", "合并图层..."));
                     var merged = new OguLayer
                     {
                         Name = Path.GetFileNameWithoutExtension(outputPath),
@@ -1474,14 +1790,14 @@ public static class ToolRegistry
                     foreach (var feature in layer2.Features)
                         merged.AddFeature(feature.Clone());
 
-                    progress?.Report("Writing merged layer...");
+                    progress?.Report(L("Writing merged layer...", "写入合并后的图层..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, merged, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Merge completed. {merged.GetFeatureCount()} total features ({layer1.GetFeatureCount()} + {layer2.GetFeatureCount()}).",
+                        Message = L($"Merge completed. {merged.GetFeatureCount()} total features ({layer1.GetFeatureCount()} + {layer2.GetFeatureCount()}).", $"合并完成。共 {merged.GetFeatureCount()} 个要素（{layer1.GetFeatureCount()} + {layer2.GetFeatureCount()}）。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -1489,7 +1805,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1532,7 +1848,7 @@ public static class ToolRegistry
                     Label = "Output Folder",
                     LabelZh = "输出文件夹",
                     Description = "Folder to write split layers to",
-                    Type = ParameterType.Text,
+                    Type = ParameterType.FolderPath,
                     Required = true
                 }
             },
@@ -1546,13 +1862,13 @@ public static class ToolRegistry
                     var outputFolder = parameters["outputFolder"];
                     var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading input layer...");
+                    progress?.Report(L("Reading input layer...", "正在读取输入图层..."));
                     var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
                     if (!Directory.Exists(outputFolder))
                         Directory.CreateDirectory(outputFolder);
 
-                    progress?.Report("Grouping features by field value...");
+                    progress?.Report(L("Grouping features by field value...", "正在按字段值分组要素..."));
                     var groups = layer.Features
                         .GroupBy(f => f.GetValue(fieldName)?.ToString() ?? "NULL")
                         .ToList();
@@ -1578,7 +1894,8 @@ public static class ToolRegistry
                             safeName = $"group_{count}";
                         var outputPath = Path.Combine(outputFolder, $"{safeName}.shp");
 
-                        progress?.Report($"Writing group '{group.Key}' ({groupLayer.GetFeatureCount()} features)...");
+                        progress?.Report(L($"Writing group '{group.Key}' ({groupLayer.GetFeatureCount()} features)...",
+                            $"正在写入分组 '{group.Key}'（{groupLayer.GetFeatureCount()} 个要素）..."));
                         await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, groupLayer, outputPath), ct);
                         count++;
                     }
@@ -1587,7 +1904,8 @@ public static class ToolRegistry
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Split completed. {count} layers created from {layer.GetFeatureCount()} features.",
+                        Message = L($"Split completed. {count} layers created from {layer.GetFeatureCount()} features.",
+                            $"分割完成。从 {layer.GetFeatureCount()} 个要素创建了 {count} 个图层。"),
                         OutputPath = outputFolder,
                         Duration = sw.Elapsed
                     };
@@ -1595,7 +1913,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1655,13 +1973,13 @@ public static class ToolRegistry
                     var inputFormat = DetectFormat(inputPath);
                     var clipFormat = DetectFormat(clipPath);
 
-                    progress?.Report("Reading input layer...");
+                    progress?.Report(L("Reading input layer...", "正在读取输入图层..."));
                     var inputLayer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Reading clip layer...");
+                    progress?.Report(L("Reading clip layer...", "正在读取裁剪图层..."));
                     var clipLayer = await Task.Run(() => OguLayerUtil.ReadLayer(clipFormat, clipPath), ct);
 
-                    progress?.Report("Computing clip geometry union...");
+                    progress?.Report(L("Computing clip geometry union...", "正在计算裁剪几何合并..."));
                     var clipWkts = clipLayer.Features
                         .Where(f => !string.IsNullOrWhiteSpace(f.Wkt))
                         .Select(f => f.Wkt!)
@@ -1669,7 +1987,7 @@ public static class ToolRegistry
 
                     var clipGeom = GeometryUtil.Wkt2Geometry(GeometryUtil.UnionWkt(clipWkts));
 
-                    progress?.Report("Clipping features...");
+                    progress?.Report(L("Clipping features...", "正在裁剪要素..."));
                     var outputLayer = new OguLayer
                     {
                         Name = Path.GetFileNameWithoutExtension(outputPath),
@@ -1693,14 +2011,15 @@ public static class ToolRegistry
                         }
                     }
 
-                    progress?.Report("Writing output layer...");
+                    progress?.Report(L("Writing output layer...", "正在写入输出图层..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Clip completed. {outputLayer.GetFeatureCount()} of {inputLayer.GetFeatureCount()} features retained.",
+                        Message = L($"Clip completed. {outputLayer.GetFeatureCount()} of {inputLayer.GetFeatureCount()} features retained.",
+                            $"裁剪完成。保留了 {inputLayer.GetFeatureCount()} 个要素中的 {outputLayer.GetFeatureCount()} 个。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -1708,7 +2027,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1780,13 +2099,13 @@ public static class ToolRegistry
                     var inputFormat = DetectFormat(inputPath);
                     var joinFormat = DetectFormat(joinPath);
 
-                    progress?.Report("Reading target layer...");
+                    progress?.Report(L("Reading target layer...", "正在读取目标图层..."));
                     var targetLayer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Reading join layer...");
+                    progress?.Report(L("Reading join layer...", "正在读取连接图层..."));
                     var joinLayer = await Task.Run(() => OguLayerUtil.ReadLayer(joinFormat, joinPath), ct);
 
-                    progress?.Report("Performing spatial join...");
+                    progress?.Report(L("Performing spatial join...", "正在执行空间连接..."));
                     var outputLayer = new OguLayer
                     {
                         Name = Path.GetFileNameWithoutExtension(outputPath),
@@ -1836,14 +2155,15 @@ public static class ToolRegistry
                         outputLayer.AddFeature(newFeature);
                     }
 
-                    progress?.Report("Writing output layer...");
+                    progress?.Report(L("Writing output layer...", "正在写入输出图层..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Spatial join completed. {joinedCount} of {targetLayer.GetFeatureCount()} features joined.",
+                        Message = L($"Spatial join completed. {joinedCount} of {targetLayer.GetFeatureCount()} features joined.",
+                            $"空间连接完成。{targetLayer.GetFeatureCount()} 个要素中有 {joinedCount} 个完成连接。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -1851,7 +2171,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -1875,7 +2195,7 @@ public static class ToolRegistry
                     Label = "Input Folder",
                     LabelZh = "输入文件夹",
                     Description = "Folder containing vector files",
-                    Type = ParameterType.Text,
+                    Type = ParameterType.FolderPath,
                     Required = true
                 },
                 new()
@@ -1884,7 +2204,7 @@ public static class ToolRegistry
                     Label = "Output Folder",
                     LabelZh = "输出文件夹",
                     Description = "Folder to write reprojected files to",
-                    Type = ParameterType.Text,
+                    Type = ParameterType.FolderPath,
                     Required = true
                 },
                 new()
@@ -1942,12 +2262,13 @@ public static class ToolRegistry
 
                     var files = Directory.GetFiles(inputFolder, extension);
                     if (files.Length == 0)
-                        throw new ArgumentException($"No {format} files found in the input folder.");
+                        throw new ArgumentException(L($"No {format} files found in the input folder.", $"输入文件夹中未找到 {format} 文件。"));
 
                     var processedCount = 0;
                     foreach (var file in files)
                     {
-                        progress?.Report($"Processing {Path.GetFileName(file)} ({processedCount + 1}/{files.Length})...");
+                        progress?.Report(L($"Processing {Path.GetFileName(file)} ({processedCount + 1}/{files.Length})...",
+                            $"正在处理 {Path.GetFileName(file)}（{processedCount + 1}/{files.Length}）..."));
 
                         var layer = await Task.Run(() => OguLayerUtil.ReadLayer(dataFormat, file), ct);
 
@@ -1968,7 +2289,8 @@ public static class ToolRegistry
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Batch reproject completed. {processedCount} files reprojected from WKID {sourceWkid} to {targetWkid}.",
+                        Message = L($"Batch reproject completed. {processedCount} files reprojected from WKID {sourceWkid} to {targetWkid}.",
+                            $"批量重投影完成。{processedCount} 个文件已从 WKID {sourceWkid} 重投影到 {targetWkid}。"),
                         OutputPath = outputFolder,
                         Duration = sw.Elapsed
                     };
@@ -1976,7 +2298,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2035,10 +2357,10 @@ public static class ToolRegistry
                     var inputFormat = DetectFormat(inputPath);
                     var outputFormat = DetectFormat(outputPath);
 
-                    progress?.Report("Reading input layer...");
+                    progress?.Report(L("Reading input layer...", "正在读取输入图层..."));
                     var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Filtering features by spatial extent...");
+                    progress?.Report(L("Filtering features by spatial extent...", "正在按空间范围过滤要素..."));
                     var outputLayer = new OguLayer
                     {
                         Name = Path.GetFileNameWithoutExtension(outputPath),
@@ -2056,14 +2378,15 @@ public static class ToolRegistry
                             outputLayer.AddFeature(feature.Clone());
                     }
 
-                    progress?.Report("Writing output layer...");
+                    progress?.Report(L("Writing output layer...", "正在写入输出图层..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Spatial filter completed. {outputLayer.GetFeatureCount()} of {layer.GetFeatureCount()} features matched.",
+                        Message = L($"Spatial filter completed. {outputLayer.GetFeatureCount()} of {layer.GetFeatureCount()} features matched.",
+                            $"空间过滤完成。{layer.GetFeatureCount()} 个要素中有 {outputLayer.GetFeatureCount()} 个匹配。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2071,7 +2394,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2129,18 +2452,20 @@ public static class ToolRegistry
                     var whereClause = parameters["whereClause"];
                     var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading and filtering layer...");
+                    progress?.Report(L("Reading and filtering layer...", "正在读取并过滤图层..."));
                     var layer = await Task.Run(() =>
                         OguLayerUtil.ReadLayer(inputFormat, inputPath, null, whereClause, null, null, null), ct);
 
-                    progress?.Report($"Writing {layer.GetFeatureCount()} filtered features...");
+                    progress?.Report(L($"Writing {layer.GetFeatureCount()} filtered features...",
+                        $"正在写入 {layer.GetFeatureCount()} 个过滤后的要素..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, layer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Attribute query completed. {layer.GetFeatureCount()} features matched.",
+                        Message = L($"Attribute query completed. {layer.GetFeatureCount()} features matched.",
+                            $"属性查询完成。匹配了 {layer.GetFeatureCount()} 个要素。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2148,7 +2473,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2204,17 +2529,19 @@ public static class ToolRegistry
                     var tableName = parameters["tableName"];
                     var outputPath = parameters["output"];
 
-                    progress?.Report("Reading from PostGIS...");
+                    progress?.Report(L("Reading from PostGIS...", "正在从 PostGIS 读取..."));
                     var layer = await Task.Run(() => PostgisUtil.ReadPostGIS(connectionString, tableName, null), ct);
 
-                    progress?.Report($"Writing {layer.GetFeatureCount()} features to Shapefile...");
+                    progress?.Report(L($"Writing {layer.GetFeatureCount()} features to Shapefile...",
+                        $"正在将 {layer.GetFeatureCount()} 个要素写入 Shapefile..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, layer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"PostGIS import completed. {layer.GetFeatureCount()} features imported.",
+                        Message = L($"PostGIS import completed. {layer.GetFeatureCount()} features imported.",
+                            $"PostGIS 导入完成。已导入 {layer.GetFeatureCount()} 个要素。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2222,7 +2549,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2279,24 +2606,26 @@ public static class ToolRegistry
                     var tableName = parameters["tableName"];
                     var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading input layer...");
+                    progress?.Report(L("Reading input layer...", "正在读取输入图层..."));
                     var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report($"Exporting {layer.GetFeatureCount()} features to PostGIS...");
+                    progress?.Report(L($"Exporting {layer.GetFeatureCount()} features to PostGIS...",
+                        $"正在将 {layer.GetFeatureCount()} 个要素导出到 PostGIS..."));
                     await Task.Run(() => PostgisUtil.WritePostGIS(layer, connectionString, tableName), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"PostGIS export completed. {layer.GetFeatureCount()} features exported to table '{tableName}'.",
+                        Message = L($"PostGIS export completed. {layer.GetFeatureCount()} features exported to table '{tableName}'.",
+                            $"PostGIS 导出完成。已将 {layer.GetFeatureCount()} 个要素导出到表 '{tableName}'。"),
                         Duration = sw.Elapsed
                     };
                 }
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2344,10 +2673,10 @@ public static class ToolRegistry
                     var outputPath = parameters["output"];
                     var inputFormat = DetectFormat(inputPath);
 
-                    progress?.Report("Reading input layer...");
+                    progress?.Report(L("Reading input layer...", "正在读取输入图层..."));
                     var layer = await Task.Run(() => OguLayerUtil.ReadLayer(inputFormat, inputPath), ct);
 
-                    progress?.Report("Computing center lines...");
+                    progress?.Report(L("Computing center lines...", "正在计算中心线..."));
                     var outputLayer = new OguLayer
                     {
                         Name = Path.GetFileNameWithoutExtension(outputPath),
@@ -2396,14 +2725,15 @@ public static class ToolRegistry
                         processedCount++;
                     }
 
-                    progress?.Report("Writing output layer...");
+                    progress?.Report(L("Writing output layer...", "正在写入输出图层..."));
                     await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, outputLayer, outputPath), ct);
 
                     sw.Stop();
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Center lines computed for {processedCount} features.",
+                        Message = L($"Center lines computed for {processedCount} features.",
+                            $"已为 {processedCount} 个要素计算中心线。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2411,7 +2741,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2458,7 +2788,7 @@ public static class ToolRegistry
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
 
-                    progress?.Report("Initializing GDAL...");
+                    progress?.Report(L("Initializing GDAL...", "正在初始化 GDAL..."));
                     await Task.Run(EnsureGdalInitialized, ct);
 
                     var ext = Path.GetExtension(outputPath)?.ToLowerInvariant();
@@ -2470,19 +2800,19 @@ public static class ToolRegistry
                         _ => "GTiff"
                     };
 
-                    progress?.Report($"Opening input raster...");
+                    progress?.Report(L("Opening input raster...", "正在打开输入栅格..."));
                     using var srcDs = Gdal.Open(inputPath, Access.GA_ReadOnly);
                     if (srcDs == null)
-                        throw new Exception("Failed to open input raster file.");
+                        throw new Exception(L("Failed to open input raster file.", "无法打开输入栅格文件。"));
 
-                    progress?.Report($"Converting to {driverName} format...");
+                    progress?.Report(L($"Converting to {driverName} format...", $"正在转换为 {driverName} 格式..."));
                     var driver = Gdal.GetDriverByName(driverName);
                     if (driver == null)
-                        throw new Exception($"GDAL driver '{driverName}' not found.");
+                        throw new Exception(L($"GDAL driver '{driverName}' not found.", $"未找到 GDAL 驱动 '{driverName}'。"));
 
                     using var outDs = driver.CreateCopy(outputPath, srcDs, 0, null, null, null);
                     if (outDs == null)
-                        throw new Exception("Failed to create output raster file.");
+                        throw new Exception(L("Failed to create output raster file.", "无法创建输出栅格文件。"));
 
                     outDs.FlushCache();
 
@@ -2490,7 +2820,8 @@ public static class ToolRegistry
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Raster format conversion completed ({driverName}).",
+                        Message = L($"Raster format conversion completed ({driverName}).",
+                            $"栅格格式转换完成（{driverName}）。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2498,7 +2829,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2568,26 +2899,28 @@ public static class ToolRegistry
                     var operation = parameters["operation"];
                     var value = double.Parse(parameters["value"], CultureInfo.InvariantCulture);
 
-                    progress?.Report("Initializing GDAL...");
+                    progress?.Report(L("Initializing GDAL...", "正在初始化 GDAL..."));
                     await Task.Run(EnsureGdalInitialized, ct);
 
-                    progress?.Report("Opening input raster...");
+                    progress?.Report(L("Opening input raster...", "正在打开输入栅格..."));
                     using var srcDs = Gdal.Open(inputPath, Access.GA_ReadOnly);
                     if (srcDs == null)
-                        throw new Exception("Failed to open input raster file.");
+                        throw new Exception(L("Failed to open input raster file.", "无法打开输入栅格文件。"));
 
                     var width = srcDs.RasterXSize;
                     var height = srcDs.RasterYSize;
                     var bandCount = srcDs.RasterCount;
 
-                    progress?.Report($"Raster size: {width}x{height}, {bandCount} bands. Computing...");
+                    progress?.Report(L($"Raster size: {width}x{height}, {bandCount} bands. Computing...",
+                        $"栅格大小：{width}x{height}，{bandCount} 个波段。正在计算..."));
 
                     double[] result = new double[width * height];
 
                     if (operation.StartsWith("NDVI"))
                     {
                         if (bandCount < 4)
-                            throw new Exception("NDVI requires at least 4 bands (Red=Band3, NIR=Band4).");
+                            throw new Exception(L("NDVI requires at least 4 bands (Red=Band3, NIR=Band4).",
+                                "NDVI 需要至少 4 个波段（红色=Band3，近红外=Band4）。"));
 
                         var red = new double[width * height];
                         var nir = new double[width * height];
@@ -2622,14 +2955,14 @@ public static class ToolRegistry
                             result[i] = band1[i] > value ? 1.0 : 0.0;
                     }
 
-                    progress?.Report("Writing output raster...");
+                    progress?.Report(L("Writing output raster...", "正在写入输出栅格..."));
                     var driver = Gdal.GetDriverByName("GTiff");
                     if (driver == null)
-                        throw new Exception("GTiff driver not found.");
+                        throw new Exception(L("GTiff driver not found.", "未找到 GTiff 驱动。"));
 
                     using var outDs = driver.Create(outputPath, width, height, 1, DataType.GDT_Float64, null);
                     if (outDs == null)
-                        throw new Exception("Failed to create output raster file.");
+                        throw new Exception(L("Failed to create output raster file.", "无法创建输出栅格文件。"));
 
                     var geoTransform = new double[6];
                     srcDs.GetGeoTransform(geoTransform);
@@ -2645,7 +2978,8 @@ public static class ToolRegistry
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Raster calculator completed. Operation: {operation}, Value: {value}.",
+                        Message = L($"Raster calculator completed. Operation: {operation}, Value: {value}.",
+                            $"栅格计算完成。运算：{operation}，值：{value}。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2653,7 +2987,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2734,7 +3068,7 @@ public static class ToolRegistry
                     var source = parameters["source"];
                     var outputPath = parameters["output"];
 
-                    progress?.Report("Computing tile coordinates...");
+                    progress?.Report(L("Computing tile coordinates...", "正在计算瓦片坐标..."));
                     var n = Math.Pow(2, zoom);
                     var tileX = (int)Math.Floor((lon + 180.0) / 360.0 * n);
                     var latRad = lat * Math.PI / 180.0;
@@ -2744,7 +3078,8 @@ public static class ToolRegistry
                         ? $"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{zoom}/{tileY}/{tileX}"
                         : $"https://tile.openstreetmap.org/{zoom}/{tileX}/{tileY}.png";
 
-                    progress?.Report($"Downloading tile ({tileX}, {tileY}) at zoom {zoom}...");
+                    progress?.Report(L($"Downloading tile ({tileX}, {tileY}) at zoom {zoom}...",
+                        $"正在下载瓦片（{tileX}, {tileY}），缩放级别 {zoom}..."));
                     var httpClient = SharedHttpClient.Value;
 
                     var imageBytes = await httpClient.GetByteArrayAsync(url, ct);
@@ -2754,7 +3089,8 @@ public static class ToolRegistry
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Tile downloaded from {source}. Tile ({tileX}, {tileY}) at zoom {zoom}. Size: {imageBytes.Length} bytes.",
+                        Message = L($"Tile downloaded from {source}. Tile ({tileX}, {tileY}) at zoom {zoom}. Size: {imageBytes.Length} bytes.",
+                            $"已从 {source} 下载瓦片。瓦片（{tileX}, {tileY}），缩放级别 {zoom}。大小：{imageBytes.Length} 字节。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -2762,7 +3098,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2821,16 +3157,17 @@ public static class ToolRegistry
                     var operation = parameters["operation"];
                     var outputPath = parameters.GetValueOrDefault("output", "");
 
-                    progress?.Report("Loading GPX file...");
+                    progress?.Report(L("Loading GPX file...", "正在加载 GPX 文件..."));
                     var doc = XDocument.Load(inputPath);
                     XNamespace gpxNs = "http://www.topografix.com/GPX/1/1";
 
                     if (operation == "Extract Waypoints to CSV")
                     {
                         if (string.IsNullOrWhiteSpace(outputPath))
-                            throw new ArgumentException("Output file is required for this operation.");
+                            throw new ArgumentException(L("Output file is required for this operation.",
+                                "此操作需要输出文件。"));
 
-                        progress?.Report("Extracting waypoints...");
+                        progress?.Report(L("Extracting waypoints...", "正在提取路点..."));
                         var waypoints = doc.Descendants(gpxNs + "wpt").ToList();
                         var lines = new List<string> { "Name,Latitude,Longitude,Elevation,Description" };
 
@@ -2850,7 +3187,8 @@ public static class ToolRegistry
                         return new ToolResult
                         {
                             Success = true,
-                            Message = $"Extracted {waypoints.Count} waypoints to CSV.",
+                            Message = L($"Extracted {waypoints.Count} waypoints to CSV.",
+                                $"已提取 {waypoints.Count} 个路点到 CSV。"),
                             OutputPath = outputPath,
                             Duration = sw.Elapsed
                         };
@@ -2858,9 +3196,10 @@ public static class ToolRegistry
                     else if (operation == "Extract Tracks to GeoJSON")
                     {
                         if (string.IsNullOrWhiteSpace(outputPath))
-                            throw new ArgumentException("Output file is required for this operation.");
+                            throw new ArgumentException(L("Output file is required for this operation.",
+                                "此操作需要输出文件。"));
 
-                        progress?.Report("Extracting tracks...");
+                        progress?.Report(L("Extracting tracks...", "正在提取轨迹..."));
                         var tracks = doc.Descendants(gpxNs + "trk").ToList();
                         var features = new List<object>();
 
@@ -2903,24 +3242,31 @@ public static class ToolRegistry
                         return new ToolResult
                         {
                             Success = true,
-                            Message = $"Extracted {features.Count} track segments to GeoJSON.",
+                            Message = L($"Extracted {features.Count} track segments to GeoJSON.",
+                                $"已提取 {features.Count} 个轨迹段到 GeoJSON。"),
                             OutputPath = outputPath,
                             Duration = sw.Elapsed
                         };
                     }
                     else // GPX Summary
                     {
-                        progress?.Report("Analyzing GPX file...");
+                        progress?.Report(L("Analyzing GPX file...", "正在分析 GPX 文件..."));
                         var waypointCount = doc.Descendants(gpxNs + "wpt").Count();
                         var trackCount = doc.Descendants(gpxNs + "trk").Count();
                         var segmentCount = doc.Descendants(gpxNs + "trkseg").Count();
                         var trackPointCount = doc.Descendants(gpxNs + "trkpt").Count();
 
-                        var message = $"GPX Summary:\n" +
-                                      $"  Waypoints: {waypointCount}\n" +
-                                      $"  Tracks: {trackCount}\n" +
-                                      $"  Track Segments: {segmentCount}\n" +
-                                      $"  Total Track Points: {trackPointCount}";
+                        var message = L(
+                            $"GPX Summary:\n" +
+                            $"  Waypoints: {waypointCount}\n" +
+                            $"  Tracks: {trackCount}\n" +
+                            $"  Track Segments: {segmentCount}\n" +
+                            $"  Total Track Points: {trackPointCount}",
+                            $"GPX 摘要：\n" +
+                            $"  路点数：{waypointCount}\n" +
+                            $"  轨迹数：{trackCount}\n" +
+                            $"  轨迹段数：{segmentCount}\n" +
+                            $"  总轨迹点数：{trackPointCount}");
 
                         sw.Stop();
                         return new ToolResult
@@ -2934,7 +3280,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };
@@ -2981,12 +3327,12 @@ public static class ToolRegistry
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
 
-                    progress?.Report("Reading addresses...");
+                    progress?.Report(L("Reading addresses...", "正在读取地址..."));
                     var lines = await File.ReadAllLinesAsync(inputPath, ct);
                     var addresses = lines.Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
 
                     if (addresses.Count == 0)
-                        throw new ArgumentException("No addresses found in input file.");
+                        throw new ArgumentException(L("No addresses found in input file.", "输入文件中未找到地址。"));
 
                     var results = new List<string> { "Address,Latitude,Longitude,DisplayName" };
 
@@ -2996,7 +3342,8 @@ public static class ToolRegistry
                     for (var i = 0; i < addresses.Count; i++)
                     {
                         var address = addresses[i].Trim();
-                        progress?.Report($"Geocoding {i + 1}/{addresses.Count}: {address}...");
+                        progress?.Report(L($"Geocoding {i + 1}/{addresses.Count}: {address}...",
+                            $"正在编码 {i + 1}/{addresses.Count}：{address}..."));
 
                         var lat = "";
                         var lon = "";
@@ -3022,11 +3369,13 @@ public static class ToolRegistry
                         }
                         catch (HttpRequestException)
                         {
-                            progress?.Report($"  Warning: HTTP request failed for '{address}'.");
+                            progress?.Report(L($"  Warning: HTTP request failed for '{address}'.",
+                                $"  警告：'{address}' 的 HTTP 请求失败。"));
                         }
                         catch (JsonException)
                         {
-                            progress?.Report($"  Warning: Failed to parse response for '{address}'.");
+                            progress?.Report(L($"  Warning: Failed to parse response for '{address}'.",
+                                $"  警告：解析 '{address}' 的响应失败。"));
                         }
 
                         results.Add($"{EscapeCsv(address)},{lat},{lon},{EscapeCsv(displayName)}");
@@ -3042,7 +3391,8 @@ public static class ToolRegistry
                     return new ToolResult
                     {
                         Success = true,
-                        Message = $"Geocoding completed. {geocodedCount} of {addresses.Count} addresses geocoded.",
+                        Message = L($"Geocoding completed. {geocodedCount} of {addresses.Count} addresses geocoded.",
+                            $"地址编码完成。{addresses.Count} 个地址中有 {geocodedCount} 个编码成功。"),
                         OutputPath = outputPath,
                         Duration = sw.Elapsed
                     };
@@ -3050,7 +3400,7 @@ public static class ToolRegistry
                 catch (Exception ex)
                 {
                     sw.Stop();
-                    return new ToolResult { Success = false, Message = $"Error: {ex.Message}", Duration = sw.Elapsed };
+                    return new ToolResult { Success = false, Message = L($"Error: {ex.Message}", $"错误：{ex.Message}"), Duration = sw.Elapsed };
                 }
             }
         };

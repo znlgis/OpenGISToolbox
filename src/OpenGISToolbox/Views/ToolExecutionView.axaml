@@ -36,7 +36,7 @@
                                 <TextBlock Text=" *" Foreground="Red" IsVisible="{Binding Required}" />
                             </StackPanel>
 
-                            <!-- InputFile / OutputFile -->
+                            <!-- InputFile / OutputFile / FolderPath -->
                             <Grid ColumnDefinitions="*,Auto"
                                   IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.InputFile}}">
                                 <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="{DynamicResource SelectFile}" />
@@ -45,6 +45,11 @@
                             <Grid ColumnDefinitions="*,Auto"
                                   IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.OutputFile}}">
                                 <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="{DynamicResource SelectOutputFile}" />
+                                <Button Grid.Column="1" Content="{DynamicResource Browse}" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto"
+                                  IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:ParameterType.FolderPath}}">
+                                <TextBox Grid.Column="0" Text="{Binding Value}" Watermark="{DynamicResource SelectFolder}" />
                                 <Button Grid.Column="1" Content="{DynamicResource Browse}" Margin="4,0,0,0" Command="{Binding BrowseFileCommand}" />
                             </Grid>
 

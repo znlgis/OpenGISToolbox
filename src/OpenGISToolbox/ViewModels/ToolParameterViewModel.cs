@@ -42,6 +42,22 @@ public partial class ToolParameterViewModel : ViewModelBase
         if (topLevel == null)
             return;
 
+        if (Parameter.Type == ParameterType.FolderPath)
+        {
+            var options = new FolderPickerOpenOptions
+            {
+                Title = LanguageManager.GetLocalizedString("SelectFolder", "Select Folder"),
+                AllowMultiple = false
+            };
+
+            var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(options);
+
+            if (folders.Count > 0)
+                Value = folders[0].Path.LocalPath;
+
+            return;
+        }
+
         var fileTypes = ParseFileFilter(Parameter.FileFilter);
 
         if (Parameter.Type == ParameterType.InputFile)
