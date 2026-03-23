@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -23,13 +24,16 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<ToolCategoryItem> Categories { get; } = new();
     public ObservableCollection<ToolInfo> FilteredTools { get; } = new();
 
+    // Cached tool list — ToolRegistry returns a Lazy singleton so this is just a reference
+    private readonly List<ToolInfo> _allTools;
+
     public MainWindowViewModel()
     {
         _executionViewModel = new ToolExecutionViewModel();
 
-        var allTools = ToolRegistry.GetAllTools();
+        _allTools = ToolRegistry.GetAllTools();
 
-        var groups = allTools.GroupBy(t => t.Category);
+        var groups = _allTools.GroupBy(t => t.Category);
         foreach (var group in groups)
         {
             Categories.Add(new ToolCategoryItem
@@ -40,7 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase
             });
         }
 
-        foreach (var tool in allTools)
+        foreach (var tool in _allTools)
             FilteredTools.Add(tool);
 
         // LanguageChanged subscription is intentionally not unsubscribed because
@@ -56,15 +60,14 @@ public partial class MainWindowViewModel : ViewModelBase
             cat.RefreshToolCountDisplay();
         }
 
-        // Refresh tool list to update DisplayName/DisplayDescription
+        // Refresh tool list to update DisplayName/DisplayDescription bindings
         var selectedId = SelectedTool?.Id;
         var currentCategoryItem = SelectedCategoryItem;
-        var allTools = ToolRegistry.GetAllTools();
 
         FilteredTools.Clear();
         var filtered = currentCategoryItem != null
-            ? allTools.Where(t => t.Category == currentCategoryItem.Category)
-            : allTools;
+            ? _allTools.Where(t => t.Category == currentCategoryItem.Category)
+            : _allTools;
         foreach (var tool in filtered)
             FilteredTools.Add(tool);
 
@@ -80,8 +83,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedCategoryItemChanged(ToolCategoryItem? value)
     {
         FilteredTools.Clear();
-        var allTools = ToolRegistry.GetAllTools();
-        var filtered = value != null ? allTools.Where(t => t.Category == value.Category) : allTools;
+        var filtered = value != null ? _allTools.Where(t => t.Category == value.Category) : _allTools;
         foreach (var tool in filtered)
             FilteredTools.Add(tool);
     }

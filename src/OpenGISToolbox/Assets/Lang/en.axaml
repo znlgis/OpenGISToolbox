@@ -44,5 +44,7 @@
     <system:String x:Key="DurationFormat"> (Duration: {0:F2}s)</system:String>
     <system:String x:Key="ErrorPrefix">Error: </system:String>
     <system:String x:Key="ExceptionPrefix">Exception: </system:String>
+    <system:String x:Key="Cancelled">Operation cancelled.</system:String>
+    <system:String x:Key="Cancel">Cancel</system:String>
 
 </ResourceDictionary>

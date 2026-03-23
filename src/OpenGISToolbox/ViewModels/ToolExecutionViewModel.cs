@@ -33,6 +33,8 @@ public partial class ToolExecutionViewModel : ViewModelBase
 
     public ObservableCollection<ToolParameterViewModel> Parameters { get; } = new();
 
+    private CancellationTokenSource? _cts;
+
     partial void OnSelectedToolChanged(ToolInfo? value)
     {
         Parameters.Clear();
@@ -47,6 +49,7 @@ public partial class ToolExecutionViewModel : ViewModelBase
         }
 
         ExecuteCommand.NotifyCanExecuteChanged();
+        CancelCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(CanExecute))]
@@ -59,6 +62,9 @@ public partial class ToolExecutionViewModel : ViewModelBase
         ResultMessage = string.Empty;
         LogOutput = string.Empty;
         IsRunning = true;
+
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
 
         try
         {
@@ -85,7 +91,7 @@ public partial class ToolExecutionViewModel : ViewModelBase
                 LogOutput += message + Environment.NewLine;
             });
 
-            var result = await SelectedTool.ExecuteAsync(parameters, progress, CancellationToken.None);
+            var result = await SelectedTool.ExecuteAsync(parameters, progress, _cts.Token);
 
             ResultSuccess = result.Success;
             ResultMessage = result.Message;
@@ -95,6 +101,13 @@ public partial class ToolExecutionViewModel : ViewModelBase
                 ResultMessage += string.Format(durationFmt, result.Duration.TotalSeconds);
             }
             HasResult = true;
+        }
+        catch (OperationCanceledException)
+        {
+            ResultSuccess = false;
+            ResultMessage = LanguageManager.GetLocalizedString("Cancelled", "Operation cancelled.");
+            HasResult = true;
+            LogOutput += LanguageManager.GetLocalizedString("Cancelled", "Operation cancelled.") + Environment.NewLine;
         }
         catch (Exception ex)
         {
@@ -108,12 +121,25 @@ public partial class ToolExecutionViewModel : ViewModelBase
         finally
         {
             IsRunning = false;
+            CancelCommand.NotifyCanExecuteChanged();
         }
     }
 
     private bool CanExecute() => SelectedTool != null && !IsRunning;
 
-    partial void OnIsRunningChanged(bool value) => ExecuteCommand.NotifyCanExecuteChanged();
+    [RelayCommand(CanExecute = nameof(CanCancel))]
+    private void Cancel()
+    {
+        _cts?.Cancel();
+    }
+
+    private bool CanCancel() => IsRunning;
+
+    partial void OnIsRunningChanged(bool value)
+    {
+        ExecuteCommand.NotifyCanExecuteChanged();
+        CancelCommand.NotifyCanExecuteChanged();
+    }
 
     [RelayCommand]
     private void ClearLog()

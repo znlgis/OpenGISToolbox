@@ -30,12 +30,20 @@ public static class ToolRegistry
         return client;
     });
 
+    private static readonly Lazy<List<ToolInfo>> CachedTools = new(BuildAllTools);
+
+    private static bool _gdalInitialized;
+
     private static void EnsureGdalInitialized()
     {
+        if (_gdalInitialized) return;
         GdalBase.ConfigureAll();
+        _gdalInitialized = true;
     }
 
-    public static List<ToolInfo> GetAllTools()
+    public static List<ToolInfo> GetAllTools() => CachedTools.Value;
+
+    private static List<ToolInfo> BuildAllTools()
     {
         var tools = new List<ToolInfo>();
 
@@ -260,7 +268,7 @@ public static class ToolRegistry
                 {
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
-                    var distance = double.Parse(parameters["distance"]);
+                    var distance = double.Parse(parameters["distance"], CultureInfo.InvariantCulture);
 
                     progress?.Report("Reading WKT geometry...");
                     var wkt = await File.ReadAllTextAsync(inputPath, ct);
@@ -714,7 +722,7 @@ public static class ToolRegistry
                 {
                     var inputPath = parameters["input"];
                     var outputPath = parameters["output"];
-                    var tolerance = double.Parse(parameters["tolerance"]);
+                    var tolerance = double.Parse(parameters["tolerance"], CultureInfo.InvariantCulture);
 
                     progress?.Report("Reading WKT geometry...");
                     var wkt = (await File.ReadAllTextAsync(inputPath, ct)).Trim();

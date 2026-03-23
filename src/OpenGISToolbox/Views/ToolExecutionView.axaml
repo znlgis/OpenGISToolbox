@@ -74,6 +74,8 @@
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="12,8"
                     IsVisible="{Binding SelectedTool, Converter={x:Static ObjectConverters.IsNotNull}}">
             <Button Content="{DynamicResource Execute}" Command="{Binding ExecuteCommand}" Classes="accent" MinWidth="100" />
+            <Button Content="{DynamicResource Cancel}" Command="{Binding CancelCommand}" Margin="8,0,0,0"
+                    IsVisible="{Binding IsRunning}" />
             <Button Content="{DynamicResource ClearLog}" Command="{Binding ClearLogCommand}" Margin="8,0,0,0" />
         </StackPanel>
 
@@ -86,7 +88,21 @@
 
         <!-- Result -->
         <Border Grid.Row="4" Margin="12,0,12,12" Padding="8" CornerRadius="4"
-                IsVisible="{Binding HasResult}">
+                IsVisible="{Binding HasResult}"
+                Classes.success="{Binding ResultSuccess}"
+                Classes.failure="{Binding !ResultSuccess}">
+            <Border.Styles>
+                <Style Selector="Border.success">
+                    <Setter Property="Background" Value="#1A4CAF50" />
+                    <Setter Property="BorderBrush" Value="#4CAF50" />
+                    <Setter Property="BorderThickness" Value="1" />
+                </Style>
+                <Style Selector="Border.failure">
+                    <Setter Property="Background" Value="#1AF44336" />
+                    <Setter Property="BorderBrush" Value="#F44336" />
+                    <Setter Property="BorderThickness" Value="1" />
+                </Style>
+            </Border.Styles>
             <TextBlock Text="{Binding ResultMessage}" TextWrapping="Wrap" />
         </Border>
     </Grid>

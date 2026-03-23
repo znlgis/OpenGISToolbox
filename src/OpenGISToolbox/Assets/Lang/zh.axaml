@@ -44,5 +44,7 @@
     <system:String x:Key="DurationFormat"> (耗时：{0:F2}秒)</system:String>
     <system:String x:Key="ErrorPrefix">错误：</system:String>
     <system:String x:Key="ExceptionPrefix">异常：</system:String>
+    <system:String x:Key="Cancelled">操作已取消。</system:String>
+    <system:String x:Key="Cancel">取消</system:String>
 
 </ResourceDictionary>
