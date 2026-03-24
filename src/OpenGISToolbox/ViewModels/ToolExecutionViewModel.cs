@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -34,6 +35,7 @@ public partial class ToolExecutionViewModel : ViewModelBase
     public ObservableCollection<ToolParameterViewModel> Parameters { get; } = new();
 
     private CancellationTokenSource? _cts;
+    private readonly StringBuilder _logBuilder = new();
 
     partial void OnSelectedToolChanged(ToolInfo? value)
     {
@@ -60,6 +62,7 @@ public partial class ToolExecutionViewModel : ViewModelBase
 
         HasResult = false;
         ResultMessage = string.Empty;
+        _logBuilder.Clear();
         LogOutput = string.Empty;
         IsRunning = true;
 
@@ -88,7 +91,8 @@ public partial class ToolExecutionViewModel : ViewModelBase
 
             var progress = new Progress<string>(message =>
             {
-                LogOutput += message + Environment.NewLine;
+                _logBuilder.AppendLine(message);
+                LogOutput = _logBuilder.ToString();
             });
 
             var result = await SelectedTool.ExecuteAsync(parameters, progress, _cts.Token);
@@ -107,7 +111,8 @@ public partial class ToolExecutionViewModel : ViewModelBase
             ResultSuccess = false;
             ResultMessage = LanguageManager.GetLocalizedString("Cancelled", "Operation cancelled.");
             HasResult = true;
-            LogOutput += LanguageManager.GetLocalizedString("Cancelled", "Operation cancelled.") + Environment.NewLine;
+            _logBuilder.AppendLine(LanguageManager.GetLocalizedString("Cancelled", "Operation cancelled."));
+            LogOutput = _logBuilder.ToString();
         }
         catch (Exception ex)
         {
@@ -116,7 +121,8 @@ public partial class ToolExecutionViewModel : ViewModelBase
             ResultMessage = $"{errorPrefix}{ex.Message}";
             HasResult = true;
             var exceptionPrefix = LanguageManager.GetLocalizedString("ExceptionPrefix", "Exception: ");
-            LogOutput += $"{exceptionPrefix}{ex.Message}{Environment.NewLine}";
+            _logBuilder.AppendLine($"{exceptionPrefix}{ex.Message}");
+            LogOutput = _logBuilder.ToString();
         }
         finally
         {
@@ -144,6 +150,7 @@ public partial class ToolExecutionViewModel : ViewModelBase
     [RelayCommand]
     private void ClearLog()
     {
+        _logBuilder.Clear();
         LogOutput = string.Empty;
         HasResult = false;
         ResultMessage = string.Empty;

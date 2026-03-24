@@ -25,7 +25,7 @@
                 </Grid>
                 <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategoryItem}" Margin="4,0">
                     <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ToolCategoryItem">
+                        <DataTemplate x:DataType="m:ToolCategoryItem">
                             <StackPanel Margin="4">
                                 <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
                                 <TextBlock Text="{Binding ToolCountDisplay}" FontSize="11" Foreground="Gray" />

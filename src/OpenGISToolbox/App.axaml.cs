@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
+using System.Globalization;
 using System.Linq;
 using Avalonia.Markup.Xaml;
 using OpenGISToolbox.Services;
@@ -15,7 +16,8 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
-        LanguageManager.Instance.Initialize("en");
+        var defaultLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "zh" ? "zh" : "en";
+        LanguageManager.Instance.Initialize(defaultLang);
     }
 
     public override void OnFrameworkInitializationCompleted()
