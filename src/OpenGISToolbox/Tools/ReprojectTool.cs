@@ -99,7 +99,7 @@ public class ReprojectTool : ToolBase
         progress?.Report(L($"Writing {layer.GetFeatureCount()} features...",
             $"正在写入 {layer.GetFeatureCount()} 个要素..."));
         var outputFormat = DetectFormat(outputPath);
-        await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, layer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(outputFormat, layer, outputPath, progress), ct);
 
         return new ToolResult
         {

@@ -111,7 +111,7 @@ public class UnionTool : ToolBase
 
         progress?.Report(L("Writing output...", "正在写入输出..."));
         var outputFormat = DetectFormat(outputPath);
-        await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(outputFormat, outputLayer, outputPath, progress), ct);
 
         return new ToolResult
         {

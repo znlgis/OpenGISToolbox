@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Bundled MaxRev GDAL natives must sit next to this exe (see TESTING.md). -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyTitle>OpenGISToolbox Real-Data Harness</AssemblyTitle>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OpenGISToolbox\OpenGISToolbox.csproj" />
+    <ProjectReference Include="..\..\tests\OpenGISToolbox.TestKit\OpenGISToolbox.TestKit.csproj" />
+  </ItemGroup>
+
+</Project>

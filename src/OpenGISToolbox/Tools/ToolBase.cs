@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenGIS.Utils.DataSource;
 using OpenGIS.Utils.Engine.Enums;
+using OpenGIS.Utils.Engine.Model.Layer;
 using OpenGISToolbox.Models;
 using OpenGISToolbox.Services;
 
@@ -128,12 +131,23 @@ public abstract class ToolBase
         };
     }
 
-    /// <summary>Safely get a required string parameter.</summary>
-    protected static string GetRequired(Dictionary<string, string> parameters, string key)
+    /// <summary>
+    /// Safely get a required string parameter. A parameter that declares a
+    /// <see cref="ToolParameter.DefaultValue"/> falls back to it when the caller
+    /// omitted the key, so headless invocations (CLI/harness/API) behave like the
+    /// UI, which prefills defaults. Parameters without a default still fail.
+    /// </summary>
+    protected string GetRequired(Dictionary<string, string> parameters, string key)
     {
-        if (!parameters.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException(L($"Required parameter '{key}' is missing or empty.", $"必填参数 '{key}' 缺失或为空。"));
-        return value;
+        if (parameters.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
+            return value;
+
+        var declaredDefault = BuildParameters()
+            .FirstOrDefault(p => p.Name == key && p.Required)?.DefaultValue;
+        if (!string.IsNullOrWhiteSpace(declaredDefault))
+            return declaredDefault;
+
+        throw new ArgumentException(L($"Required parameter '{key}' is missing or empty.", $"必填参数 '{key}' 缺失或为空。"));
     }
 
     /// <summary>Safely get an optional string parameter.</summary>
@@ -143,7 +157,7 @@ public abstract class ToolBase
     }
 
     /// <summary>Safely parse a required double parameter.</summary>
-    protected static double GetRequiredDouble(Dictionary<string, string> parameters, string key)
+    protected double GetRequiredDouble(Dictionary<string, string> parameters, string key)
     {
         var raw = GetRequired(parameters, key);
         if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var result))
@@ -152,12 +166,37 @@ public abstract class ToolBase
     }
 
     /// <summary>Safely parse a required integer parameter.</summary>
-    protected static int GetRequiredInt(Dictionary<string, string> parameters, string key)
+    protected int GetRequiredInt(Dictionary<string, string> parameters, string key)
     {
         var raw = GetRequired(parameters, key);
         if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
             throw new ArgumentException(L($"Parameter '{key}' value '{raw}' is not a valid integer.", $"参数 '{key}' 的值 '{raw}' 不是有效整数。"));
         return result;
+    }
+
+    /// <summary>
+    /// Writes a vector layer, first dropping features that carry no geometry.
+    /// Real-world files legitimately contain NullShape records; the GDAL-backed
+    /// engine counts every geometry-less feature as a write failure and aborts
+    /// the whole layer, so a single null record would otherwise fail an
+    /// otherwise-fine conversion. Such features cannot round-trip through the
+    /// WKT pipeline anyway, so we drop them and surface the count via progress.
+    /// Returns the number of dropped features.
+    /// </summary>
+    protected static int WriteLayerSafe(
+        DataFormatType format, OguLayer layer, string path, IProgress<string>? progress)
+    {
+        var nulls = layer.Features.Count(f => string.IsNullOrWhiteSpace(f.Wkt));
+        if (nulls > 0)
+        {
+            layer.Features = layer.Features
+                .Where(f => !string.IsNullOrWhiteSpace(f.Wkt)).ToList();
+            progress?.Report(L(
+                $"Skipped {nulls} feature(s) without geometry.",
+                $"已跳过 {nulls} 个无几何要素。"));
+        }
+        OguLayerUtil.WriteLayer(format, layer, path);
+        return nulls;
     }
 
     /// <summary>Escape a CSV field value.</summary>

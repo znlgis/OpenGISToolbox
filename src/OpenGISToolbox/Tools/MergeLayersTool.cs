@@ -129,7 +129,7 @@ public class MergeLayersTool : ToolBase
 
         progress?.Report(L($"Writing {mergedLayer.GetFeatureCount()} features...",
             $"正在写入 {mergedLayer.GetFeatureCount()} 个要素..."));
-        await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, mergedLayer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(DataFormatType.SHP, mergedLayer, outputPath, progress), ct);
 
         return new ToolResult
         {

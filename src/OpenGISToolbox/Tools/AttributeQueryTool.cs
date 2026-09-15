@@ -75,7 +75,7 @@ public class AttributeQueryTool : ToolBase
 
         progress?.Report(L($"Writing {layer.GetFeatureCount()} filtered features...",
             $"正在写入 {layer.GetFeatureCount()} 个过滤后的要素..."));
-        await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, layer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(DataFormatType.SHP, layer, outputPath, progress), ct);
 
         return new ToolResult
         {

@@ -16,14 +16,18 @@ public class ConversionTests : IDisposable
     public static IEnumerable<object[]> RoundTripFormats =>
         new[]
         {
-            new object[] { "out.geojson" },
-            new object[] { "out.gpkg" },
-            new object[] { "out.kml" },
+            // (output file, field under which the source `label` values land)
+            // KML has no generic attribute bag: GDAL's KML driver maps the schema
+            // fields onto <name>/<description>, so `label` values come back under
+            // `description`. Values — not key names — are the fidelity guarantee.
+            new object[] { "out.geojson", "label" },
+            new object[] { "out.gpkg", "label" },
+            new object[] { "out.kml", "description" },
         };
 
     [Theory]
     [MemberData(nameof(RoundTripFormats))]
-    public async Task FormatConversion_RoundTrips_Features(string outName)
+    public async Task FormatConversion_RoundTrips_Features(string outName, string attributeField)
     {
         var input = TestEnv.MakeSquaresShp(_dir);
         var output = Path.Combine(_dir, outName);
@@ -41,7 +45,7 @@ public class ConversionTests : IDisposable
         var layer = TestEnv.ReadLayer(output);
         Assert.Equal(3, layer.GetFeatureCount());
         // attributes preserved
-        var labels = layer.Features.Select(f => f.GetValue("label")?.ToString()).OrderBy(v => v).ToList();
+        var labels = layer.Features.Select(f => f.GetValue(attributeField)?.ToString()).OrderBy(v => v).ToList();
         Assert.Equal(new[] { "A", "B", "C" }, labels);
         // geometry preserved (polygon)
         Assert.All(layer.Features, f => Assert.Contains("POLYGON", f.Wkt ?? "", StringComparison.OrdinalIgnoreCase));

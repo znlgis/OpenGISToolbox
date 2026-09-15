@@ -3,6 +3,10 @@
     <Project Path="src/OpenGISToolbox/OpenGISToolbox.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OpenGISToolbox.TestKit/OpenGISToolbox.TestKit.csproj" />
     <Project Path="tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/OpenGISToolbox.RealDataHarness/OpenGISToolbox.RealDataHarness.csproj" />
   </Folder>
 </Solution>

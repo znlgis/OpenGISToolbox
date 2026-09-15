@@ -69,7 +69,7 @@ public class PostgisImportTool : ToolBase
         var layer = await Task.Run(() => PostgisUtil.ReadPostGIS(connectionString, tableName, null), ct);
 
         progress?.Report(L($"Read {layer.GetFeatureCount()} features. Writing output...", $"已读取 {layer.GetFeatureCount()} 个要素，正在写入输出..."));
-        await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, layer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(DataFormatType.SHP, layer, outputPath, progress), ct);
 
         return new ToolResult
         {

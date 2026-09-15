@@ -107,7 +107,7 @@ public class SpatialFilterTool : ToolBase
         progress?.Report(L($"Writing {outputLayer.GetFeatureCount()} features...",
             $"正在写入 {outputLayer.GetFeatureCount()} 个要素..."));
         var outputFormat = DetectFormat(outputPath);
-        await Task.Run(() => OguLayerUtil.WriteLayer(outputFormat, outputLayer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(outputFormat, outputLayer, outputPath, progress), ct);
 
         return new ToolResult
         {

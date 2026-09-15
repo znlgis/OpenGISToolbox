@@ -125,7 +125,7 @@ public class BatchReprojectTool : ToolBase
             layer.Wkid = targetWkid;
 
             var outputPath = Path.Combine(outputFolder, Path.GetFileName(file));
-            await Task.Run(() => OguLayerUtil.WriteLayer(dataFormat, layer, outputPath), ct);
+            await Task.Run(() => WriteLayerSafe(dataFormat, layer, outputPath, progress), ct);
             processedCount++;
         }
 

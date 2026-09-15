@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Same reason as the test project: pin the RID so the bundled MaxRev GDAL
+         native libraries land in this project's output directory. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Raw SQL access to the test database, fully independent of the GDAL stack
+         under test, so PostGIS round-trip expectations are third-party truth. -->
+    <PackageReference Include="Npgsql" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OpenGISToolbox\OpenGISToolbox.csproj" />
+  </ItemGroup>
+
+</Project>

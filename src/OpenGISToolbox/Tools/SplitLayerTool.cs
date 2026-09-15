@@ -112,7 +112,7 @@ public class SplitLayerTool : ToolBase
             }
 
             var outputPath = Path.Combine(outputFolder, $"{groupLayer.Name}.shp");
-            await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, groupLayer, outputPath), ct);
+            await Task.Run(() => WriteLayerSafe(DataFormatType.SHP, groupLayer, outputPath, progress), ct);
             groupCount++;
 
             progress?.Report(L(

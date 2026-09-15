@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using OpenGIS.Utils.DataSource;
 using OpenGIS.Utils.Engine.Enums;
+using OpenGIS.Utils.Engine.Model.Layer;
+using OpenGIS.Utils.Geometry;
 using OpenGISToolbox.Models;
 
 namespace OpenGISToolbox.Tools;
@@ -97,8 +99,15 @@ public class FormatConversionTool : ToolBase
         progress?.Report(L("Reading input file...", "读取输入文件..."));
         var layer = await Task.Run(() => OguLayerUtil.ReadLayer(_sourceFormat, inputPath), ct);
 
+        // The DXF driver stores entities (LINE/POLYLINE/POINT), never multi-part
+        // geometries — every feature of a real-world MultiPolygon layer fails to
+        // create and the whole write aborts. Explode multi-part geometries into
+        // single-part features (preserving attributes) for DXF targets.
+        if (_targetFormat == DataFormatType.DXF)
+            layer = ExplodeForDxf(layer);
+
         progress?.Report(L($"Read {layer.GetFeatureCount()} features. Writing output...", $"已读取 {layer.GetFeatureCount()} 个要素，正在写入输出..."));
-        await Task.Run(() => OguLayerUtil.WriteLayer(_targetFormat, layer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(_targetFormat, layer, outputPath, progress), ct);
 
         return new ToolResult
         {
@@ -106,5 +115,66 @@ public class FormatConversionTool : ToolBase
             Message = L($"Conversion completed. {layer.GetFeatureCount()} features converted.", $"转换完成，共转换 {layer.GetFeatureCount()} 个要素。"),
             OutputPath = outputPath
         };
+    }
+
+    private static OguLayer ExplodeForDxf(OguLayer src)
+    {
+        var outLayer = new OguLayer
+        {
+            Name = src.Name,
+            Wkid = src.Wkid,
+            GeometryType = src.GeometryType switch
+            {
+                GeometryType.MULTIPOLYGON => GeometryType.POLYGON,
+                GeometryType.MULTILINESTRING => GeometryType.LINESTRING,
+                GeometryType.MULTIPOINT => GeometryType.POINT,
+                _ => src.GeometryType
+            }
+        };
+        // NOTE: attributes are intentionally NOT carried over. The DXF entity schema
+        // is fixed; when its field creation is skipped, the write pipeline still maps
+        // attribute indices ordinally and lands values on the wrong built-in columns
+        // (breaking every feature). Geometry-only output is the reliable contract.
+
+        var fid = 0;
+        foreach (var feature in src.Features)
+        {
+            if (string.IsNullOrWhiteSpace(feature.Wkt)) continue;
+            var wkt = feature.Wkt.TrimStart();
+            var container = wkt.StartsWith("MULTIPOLYGON", StringComparison.OrdinalIgnoreCase) ? GeometryType.MULTIPOLYGON
+                : wkt.StartsWith("MULTILINESTRING", StringComparison.OrdinalIgnoreCase) ? GeometryType.MULTILINESTRING
+                : wkt.StartsWith("MULTIPOINT", StringComparison.OrdinalIgnoreCase) ? GeometryType.MULTIPOINT
+                : GeometryType.UNKNOWN;
+            if (container == GeometryType.UNKNOWN)
+            {
+                // Simple geometry: write it whole. (Iterating rings of a single
+                // POLYGON would emit LINESTRING parts that the DXF layer rejects.)
+                var whole = feature.Clone();
+                whole.Fid = fid++;
+                outLayer.AddFeature(whole);
+                continue;
+            }
+
+            var geometry = GeometryUtil.Wkt2Geometry(feature.Wkt);
+            if (geometry == null) continue;
+            try
+            {
+                var parts = geometry.GetGeometryCount();
+                for (var i = 0; i < parts; i++)
+                {
+                    var part = geometry.GetGeometryRef(i);
+                    if (part == null) continue;
+                    var single = feature.Clone();
+                    single.Fid = fid++;
+                    single.Wkt = GeometryUtil.Geometry2Wkt(part);
+                    outLayer.AddFeature(single);
+                }
+            }
+            finally
+            {
+                geometry.Dispose();
+            }
+        }
+        return outLayer;
     }
 }

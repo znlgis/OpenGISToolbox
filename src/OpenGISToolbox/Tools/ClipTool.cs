@@ -128,7 +128,7 @@ public class ClipTool : ToolBase
 
         progress?.Report(L($"Writing {outputLayer.GetFeatureCount()} features...",
             $"正在写入 {outputLayer.GetFeatureCount()} 个要素..."));
-        await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, outputLayer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(DataFormatType.SHP, outputLayer, outputPath, progress), ct);
 
         return new ToolResult
         {

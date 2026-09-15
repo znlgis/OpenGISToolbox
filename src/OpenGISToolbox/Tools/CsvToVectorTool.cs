@@ -188,7 +188,7 @@ public class CsvToVectorTool : ToolBase
         }
 
         progress?.Report(L($"Writing {layer.GetFeatureCount()} features...", $"正在写入 {layer.GetFeatureCount()} 个要素..."));
-        await Task.Run(() => OguLayerUtil.WriteLayer(DataFormatType.SHP, layer, outputPath), ct);
+        await Task.Run(() => WriteLayerSafe(DataFormatType.SHP, layer, outputPath, progress), ct);
 
         var message = skipped > 0
             ? L($"Conversion completed. {layer.GetFeatureCount()} features created, {skipped} rows skipped (invalid coordinates).",
