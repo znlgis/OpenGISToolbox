@@ -5,6 +5,14 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!--
+      Pin a RuntimeIdentifier so the bundled MaxRev GDAL native libraries
+      (gdal.dll/proj.dll) are copied into the output folder. Without this the app
+      loads whatever gdal.dll is first on PATH (e.g. a system OSGeo4W install),
+      which is version-incompatible with the MaxRev .NET bindings and crashes
+      at startup. See tests/TESTING.md.
+    -->
+    <RuntimeIdentifier Condition="$([MSBuild]::IsOSPlatform('Windows'))">win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
