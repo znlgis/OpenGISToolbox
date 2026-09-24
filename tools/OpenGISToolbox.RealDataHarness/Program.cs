@@ -53,6 +53,7 @@ public static class Program
         await Sections.Sprint1.Run();
         await Sections.Sprint2.Run();
         await Sections.Sprint3.Run();
+        await Sections.Sprint4.Run();
 
         Checks.PrintSummary();
         return Checks.ExitCode;

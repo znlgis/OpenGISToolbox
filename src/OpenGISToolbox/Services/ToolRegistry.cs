@@ -108,6 +108,8 @@ public static class ToolRegistry
         tools.Add(new ClipTool().ToToolInfo());
         tools.Add(new SpatialJoinTool().ToToolInfo());
         tools.Add(new CentralLinesTool().ToToolInfo());
+        tools.Add(new VoronoiTool().ToToolInfo());
+        tools.Add(new DelaunayTool().ToToolInfo());
 
         // ── Validation tools ──
         tools.Add(new CheckGeometryTool().ToToolInfo());

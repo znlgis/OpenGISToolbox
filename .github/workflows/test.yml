@@ -1,0 +1,51 @@
+name: Tests
+
+# Runs the per-class xUnit suite (and, on manual dispatch, the real-data console
+# harness) on the platform the bundled MaxRev GDAL runtime is pinned to.
+# Live geocode/tile checks are skipped so CI never depends on third-party web
+# services; the Natural Earth anchor set is downloaded once and cached per job.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      with_harness:
+        description: 'Also run the real-data console harness'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    runs-on: windows-latest
+    env:
+      OGT_SKIP_NETWORK: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        run: dotnet build OpenGISToolbox.slnx -c Release
+
+      - name: Cache Natural Earth anchor set
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/OpenGISToolboxTests
+          key: ne50m-${{ runner.os }}-v1
+          restore-keys: ne50m-${{ runner.os }}-
+
+      - name: Run xUnit suite (per-class)
+        shell: bash
+        run: bash run-tests.sh
+
+      - name: Run real-data harness (manual dispatch only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_harness }}
+        shell: bash
+        run: bash run-tests.sh --with-harness

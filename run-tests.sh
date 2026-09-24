@@ -28,6 +28,7 @@ classes=(
   Sprint1ToolTests
   Sprint2ToolTests
   Sprint3ToolTests
+  Sprint4ToolTests
 )
 PROJECT=tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj
 FAILED=0

@@ -16,7 +16,7 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 
 - 🖥️ **Cross-Platform Desktop App**: Runs on Windows, Linux, and macOS via Avalonia UI
 - 🔄 **Format Conversion**: Convert between Shapefile, GeoJSON, KML, GeoPackage, DXF, FileGDB, CSV, and PostGIS formats, with batch directory-wide conversion
-- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Symmetric Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Dissolve (by attribute), Split, Clip, Spatial Join, Central Lines, Multipart↔Singlepart, Extract Vertices, and Polygon↔Line conversions
+- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Symmetric Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Dissolve (by attribute), Split, Clip, Spatial Join, Central Lines, Multipart↔Singlepart, Extract Vertices, Polygon↔Line conversions, and Voronoi / Delaunay triangulation
 - ✅ **Geometry Validation**: Check geometry validity with detailed error reporting
 - 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems, with batch reprojection support
 - 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, Attribute Query, Extract by Location, Nearest Neighbor join, Count Points in Polygon, and Create Grid (fishnet)
@@ -90,7 +90,7 @@ OpenGISToolbox/
 
 The following table shows the mapping between NextGIS Toolbox features and the current implementation status.
 
-#### ✅ Implemented Tools (60 tools)
+#### ✅ Implemented Tools (62 tools)
 
 | # | Category | Tool | NextGIS Equivalent | Status |
 |---|----------|------|--------------------|--------|
@@ -154,6 +154,8 @@ The following table shows the mapping between NextGIS Toolbox features and the c
 | 58 | Raster | Raster Clip (by extent) | Raster clipping | ✅ Done |
 | 59 | Raster | Raster Mosaic | Raster mosaic | ✅ Done |
 | 60 | Raster | Zonal Statistics | Zonal statistics of raster | ✅ Done |
+| 61 | Geometry | Voronoi Diagram | Thiessen polygons | ✅ Done |
+| 62 | Geometry | Delaunay Triangulation | Delaunay triangle mesh | ✅ Done |
 
 ### How It Works
 
@@ -192,7 +194,7 @@ Contributions are welcome! To add a new tool:
 
 - 🖥️ **跨平台桌面应用**：通过 Avalonia UI 在 Windows、Linux 和 macOS 上运行
 - 🔄 **格式转换**：在 Shapefile、GeoJSON、KML、GeoPackage、DXF、FileGDB、CSV 和 PostGIS 格式之间转换，支持整个目录的批量转换
-- 📐 **几何处理**：缓冲区、合并、交集、差集、对称差、凸包、质心、简化、修复几何、合并图层、按属性融合、拆分图层、裁剪、空间连接、中心线、多部件↔单部件互转、提取顶点以及面↔线转换
+- 📐 **几何处理**：缓冲区、合并、交集、差集、对称差、凸包、质心、简化、修复几何、合并图层、按属性融合、拆分图层、裁剪、空间连接、中心线、多部件↔单部件互转、提取顶点、面↔线转换，以及泰森多边形 / Delaunay 三角网
 - ✅ **几何验证**：检查几何有效性并提供详细错误报告
 - 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标，支持批量重投影
 - 📏 **空间分析**：计算几何对象的面积和长度、空间过滤、属性查询、按位置提取、最近邻连接、点在多边形计数以及创建渔网网格
@@ -266,7 +268,7 @@ OpenGISToolbox/
 
 下表展示了 NextGIS Toolbox 功能与当前实现状态的对应关系。
 
-#### ✅ 已实现工具（60个）
+#### ✅ 已实现工具（62个）
 
 | # | 类别 | 工具 | NextGIS 对应功能 | 状态 |
 |---|------|------|-----------------|------|
@@ -330,6 +332,8 @@ OpenGISToolbox/
 | 58 | 栅格处理 | 栅格裁剪 | 栅格裁剪 | ✅ 已完成 |
 | 59 | 栅格处理 | 栅格镶嵌 | 栅格镶嵌 | ✅ 已完成 |
 | 60 | 栅格处理 | 分区统计 | 栅格分区统计 | ✅ 已完成 |
+| 61 | 几何处理 | 泰森多边形 | Voronoi 图 | ✅ 已完成 |
+| 62 | 几何处理 | Delaunay 三角网 | Delaunay 三角剖分 | ✅ 已完成 |
 
 ### 使用方法
 
