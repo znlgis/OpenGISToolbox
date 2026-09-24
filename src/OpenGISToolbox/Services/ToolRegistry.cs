@@ -121,6 +121,10 @@ public static class ToolRegistry
         tools.Add(new CalculateLengthTool().ToToolInfo());
         tools.Add(new SpatialFilterTool().ToToolInfo());
         tools.Add(new AttributeQueryTool().ToToolInfo());
+        tools.Add(new ExtractByLocationTool().ToToolInfo());
+        tools.Add(new NearestNeighborTool().ToToolInfo());
+        tools.Add(new CountPointsInPolygonTool().ToToolInfo());
+        tools.Add(new CreateGridTool().ToToolInfo());
 
         // ── Utility tools ──
         tools.Add(new ZipCompressTool().ToToolInfo());

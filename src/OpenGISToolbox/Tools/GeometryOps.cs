@@ -144,4 +144,24 @@ public static class GeometryOps
         var open = wkt.IndexOf('(');
         return (open < 0 ? wkt : wkt[..open]).Trim().ToUpperInvariant();
     }
+
+    /// <summary>
+    /// Axis-aligned bounding box (minx, miny, maxx, maxy) of a WKT via its
+    /// coordinate scan. Returns null when the WKT has no coordinates.
+    /// </summary>
+    public static double[]? BoundsOfWkt(string? wkt)
+    {
+        var coords = ExtractCoordinates(wkt);
+        if (coords.Count == 0) return null;
+        double minx = double.MaxValue, miny = double.MaxValue;
+        double maxx = double.MinValue, maxy = double.MinValue;
+        foreach (var (x, y) in coords)
+        {
+            if (x < minx) minx = x;
+            if (x > maxx) maxx = x;
+            if (y < miny) miny = y;
+            if (y > maxy) maxy = y;
+        }
+        return new[] { minx, miny, maxx, maxy };
+    }
 }

@@ -26,6 +26,7 @@ classes=(
   PostgisRoundTripTests
   NetworkToolTests
   Sprint1ToolTests
+  Sprint2ToolTests
 )
 PROJECT=tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj
 FAILED=0

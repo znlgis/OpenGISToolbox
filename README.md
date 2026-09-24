@@ -19,7 +19,7 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 - 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Symmetric Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Dissolve (by attribute), Split, Clip, Spatial Join, Central Lines, Multipart↔Singlepart, Extract Vertices, and Polygon↔Line conversions
 - ✅ **Geometry Validation**: Check geometry validity with detailed error reporting
 - 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems, with batch reprojection support
-- 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, and Attribute Query
+- 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, Attribute Query, Extract by Location, Nearest Neighbor join, Count Points in Polygon, and Create Grid (fishnet)
 - 🗺️ **Raster Processing**: Raster format conversion and raster calculator (NDVI, Scale, Offset, Threshold)
 - 🛰️ **Remote Sensing**: Download satellite imagery tiles from public tile services
 - 📍 **GPS Tools**: GPX file processing (extract waypoints/tracks, GPX summary)
@@ -90,7 +90,7 @@ OpenGISToolbox/
 
 The following table shows the mapping between NextGIS Toolbox features and the current implementation status.
 
-#### ✅ Implemented Tools (50 tools)
+#### ✅ Implemented Tools (54 tools)
 
 | # | Category | Tool | NextGIS Equivalent | Status |
 |---|----------|------|--------------------|--------|
@@ -144,6 +144,10 @@ The following table shows the mapping between NextGIS Toolbox features and the c
 | 48 | Geometry | Polygon to Line | Polygons to lines | ✅ Done |
 | 49 | Geometry | Line to Polygon | Lines to polygons | ✅ Done |
 | 50 | Conversion | Batch Format Conversion | Vector format conversion (batch) | ✅ Done |
+| 51 | Analysis | Extract by Location | Select by location | ✅ Done |
+| 52 | Analysis | Nearest Neighbor | Nearest neighbour join / distance | ✅ Done |
+| 53 | Analysis | Count Points in Polygon | Count points in polygon | ✅ Done |
+| 54 | Analysis | Create Grid (fishnet) | Create grid / fishnet | ✅ Done |
 
 ### How It Works
 
@@ -185,7 +189,7 @@ Contributions are welcome! To add a new tool:
 - 📐 **几何处理**：缓冲区、合并、交集、差集、对称差、凸包、质心、简化、修复几何、合并图层、按属性融合、拆分图层、裁剪、空间连接、中心线、多部件↔单部件互转、提取顶点以及面↔线转换
 - ✅ **几何验证**：检查几何有效性并提供详细错误报告
 - 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标，支持批量重投影
-- 📏 **空间分析**：计算几何对象的面积和长度、空间过滤和属性查询
+- 📏 **空间分析**：计算几何对象的面积和长度、空间过滤、属性查询、按位置提取、最近邻连接、点在多边形计数以及创建渔网网格
 - 🗺️ **栅格处理**：栅格格式转换和栅格计算器（NDVI、缩放、偏移、阈值）
 - 🛰️ **遥感**：从公共瓦片服务下载卫星影像
 - 📍 **GPS 工具**：GPX 文件处理（提取航点/轨迹、GPX 摘要）
@@ -256,7 +260,7 @@ OpenGISToolbox/
 
 下表展示了 NextGIS Toolbox 功能与当前实现状态的对应关系。
 
-#### ✅ 已实现工具（50个）
+#### ✅ 已实现工具（54个）
 
 | # | 类别 | 工具 | NextGIS 对应功能 | 状态 |
 |---|------|------|-----------------|------|
@@ -310,6 +314,10 @@ OpenGISToolbox/
 | 48 | 几何处理 | 面转线 | 多边形转线 | ✅ 已完成 |
 | 49 | 几何处理 | 线转面 | 线转多边形 | ✅ 已完成 |
 | 50 | 格式转换 | 批量格式转换 | 矢量格式转换（批量） | ✅ 已完成 |
+| 51 | 空间分析 | 按位置提取 | 按位置选择 | ✅ 已完成 |
+| 52 | 空间分析 | 最近邻连接 | 最近邻/距离 | ✅ 已完成 |
+| 53 | 空间分析 | 点在多边形计数 | 统计多边形内的点 | ✅ 已完成 |
+| 54 | 空间分析 | 创建渔网网格 | 创建网格/渔网 | ✅ 已完成 |
 
 ### 使用方法
 
