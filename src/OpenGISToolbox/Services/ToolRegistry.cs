@@ -85,17 +85,25 @@ public static class ToolRegistry
         tools.Add(new CsvToVectorTool().ToToolInfo());
         tools.Add(new PostgisImportTool().ToToolInfo());
         tools.Add(new PostgisExportTool().ToToolInfo());
+        tools.Add(new BatchConvertTool().ToToolInfo());
 
         // ── Geometry tools ──
         tools.Add(new BufferTool().ToToolInfo());
         tools.Add(new UnionTool().ToToolInfo());
         tools.Add(new IntersectionTool().ToToolInfo());
         tools.Add(new DifferenceTool().ToToolInfo());
+        tools.Add(new SymDifferenceTool().ToToolInfo());
         tools.Add(new ConvexHullTool().ToToolInfo());
         tools.Add(new CentroidTool().ToToolInfo());
         tools.Add(new SimplifyTool().ToToolInfo());
         tools.Add(new FixGeometriesTool().ToToolInfo());
         tools.Add(new MergeLayersTool().ToToolInfo());
+        tools.Add(new DissolveTool().ToToolInfo());
+        tools.Add(new MultipartToSinglepartTool().ToToolInfo());
+        tools.Add(new SinglepartToMultipartTool().ToToolInfo());
+        tools.Add(new ExtractVerticesTool().ToToolInfo());
+        tools.Add(new PolygonToLineTool().ToToolInfo());
+        tools.Add(new LineToPolygonTool().ToToolInfo());
         tools.Add(new SplitLayerTool().ToToolInfo());
         tools.Add(new ClipTool().ToToolInfo());
         tools.Add(new SpatialJoinTool().ToToolInfo());

@@ -50,6 +50,7 @@ public static class Program
         await Sections.RasterAndMisc.Run();
         await Sections.Network.Run();
         await Sections.ErrorMatrix.Run();
+        await Sections.Sprint1.Run();
 
         Checks.PrintSummary();
         return Checks.ExitCode;

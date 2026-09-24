@@ -25,6 +25,7 @@ classes=(
   DxfFilegdbToolTests
   PostgisRoundTripTests
   NetworkToolTests
+  Sprint1ToolTests
 )
 PROJECT=tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj
 FAILED=0

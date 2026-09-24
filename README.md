@@ -15,8 +15,8 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 ### Features
 
 - 🖥️ **Cross-Platform Desktop App**: Runs on Windows, Linux, and macOS via Avalonia UI
-- 🔄 **Format Conversion**: Convert between Shapefile, GeoJSON, KML, GeoPackage, DXF, FileGDB, CSV, and PostGIS formats
-- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Split, Clip, Spatial Join, and Central Lines operations
+- 🔄 **Format Conversion**: Convert between Shapefile, GeoJSON, KML, GeoPackage, DXF, FileGDB, CSV, and PostGIS formats, with batch directory-wide conversion
+- 📐 **Geometry Processing**: Buffer, Union, Intersection, Difference, Symmetric Difference, Convex Hull, Centroid, Simplify, Fix Geometries, Merge, Dissolve (by attribute), Split, Clip, Spatial Join, Central Lines, Multipart↔Singlepart, Extract Vertices, and Polygon↔Line conversions
 - ✅ **Geometry Validation**: Check geometry validity with detailed error reporting
 - 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems, with batch reprojection support
 - 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, and Attribute Query
@@ -34,7 +34,7 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 | Framework | .NET 10 |
 | UI Framework | Avalonia UI 11.3 |
 | MVVM Toolkit | CommunityToolkit.Mvvm 8.2 |
-| GIS Engine | [OpenGIS.Utils](https://www.nuget.org/packages/OpenGIS.Utils) 1.0.0 (GDAL-based) |
+| GIS Engine | [OpenGIS.Utils](https://www.nuget.org/packages/OpenGIS.Utils) 1.0.8 (GDAL-based) |
 | Theme | Fluent Theme |
 
 ### Getting Started
@@ -90,7 +90,7 @@ OpenGISToolbox/
 
 The following table shows the mapping between NextGIS Toolbox features and the current implementation status.
 
-#### ✅ Implemented Tools (42 tools)
+#### ✅ Implemented Tools (50 tools)
 
 | # | Category | Tool | NextGIS Equivalent | Status |
 |---|----------|------|--------------------|--------|
@@ -136,6 +136,14 @@ The following table shows the mapping between NextGIS Toolbox features and the c
 | 40 | Remote Sensing | Satellite Image Download | Sentinel-2/Landsat | ✅ Done |
 | 41 | GPS | GPX Processing | Clip/merge/split GPX files | ✅ Done |
 | 42 | Geocoding | Geocode Addresses | Geocoding service | ✅ Done |
+| 43 | Geometry | Symmetric Difference | Geometry processing | ✅ Done |
+| 44 | Geometry | Dissolve (by attribute) | Merge by attribute | ✅ Done |
+| 45 | Geometry | Multipart to Singlepart | Multipart to singleparts | ✅ Done |
+| 46 | Geometry | Singlepart to Multipart | Singleparts to multipart | ✅ Done |
+| 47 | Geometry | Extract Vertices | Points to geometry / nodes | ✅ Done |
+| 48 | Geometry | Polygon to Line | Polygons to lines | ✅ Done |
+| 49 | Geometry | Line to Polygon | Lines to polygons | ✅ Done |
+| 50 | Conversion | Batch Format Conversion | Vector format conversion (batch) | ✅ Done |
 
 ### How It Works
 
@@ -173,8 +181,8 @@ Contributions are welcome! To add a new tool:
 ### 特性
 
 - 🖥️ **跨平台桌面应用**：通过 Avalonia UI 在 Windows、Linux 和 macOS 上运行
-- 🔄 **格式转换**：在 Shapefile、GeoJSON、KML、GeoPackage、DXF、FileGDB、CSV 和 PostGIS 格式之间转换
-- 📐 **几何处理**：缓冲区、合并、交集、差集、凸包、质心、简化、修复几何、合并图层、拆分图层、裁剪、空间连接和中心线操作
+- 🔄 **格式转换**：在 Shapefile、GeoJSON、KML、GeoPackage、DXF、FileGDB、CSV 和 PostGIS 格式之间转换，支持整个目录的批量转换
+- 📐 **几何处理**：缓冲区、合并、交集、差集、对称差、凸包、质心、简化、修复几何、合并图层、按属性融合、拆分图层、裁剪、空间连接、中心线、多部件↔单部件互转、提取顶点以及面↔线转换
 - ✅ **几何验证**：检查几何有效性并提供详细错误报告
 - 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标，支持批量重投影
 - 📏 **空间分析**：计算几何对象的面积和长度、空间过滤和属性查询
@@ -192,7 +200,7 @@ Contributions are welcome! To add a new tool:
 | 框架 | .NET 10 |
 | UI 框架 | Avalonia UI 11.3 |
 | MVVM 工具包 | CommunityToolkit.Mvvm 8.2 |
-| GIS 引擎 | [OpenGIS.Utils](https://www.nuget.org/packages/OpenGIS.Utils) 1.0.0（基于 GDAL）|
+| GIS 引擎 | [OpenGIS.Utils](https://www.nuget.org/packages/OpenGIS.Utils) 1.0.8（基于 GDAL）|
 | 主题 | Fluent 主题 |
 
 ### 快速开始
@@ -248,7 +256,7 @@ OpenGISToolbox/
 
 下表展示了 NextGIS Toolbox 功能与当前实现状态的对应关系。
 
-#### ✅ 已实现工具（42个）
+#### ✅ 已实现工具（50个）
 
 | # | 类别 | 工具 | NextGIS 对应功能 | 状态 |
 |---|------|------|-----------------|------|
@@ -294,6 +302,14 @@ OpenGISToolbox/
 | 40 | 遥感 | 卫星影像下载 | Sentinel-2/Landsat | ✅ 已完成 |
 | 41 | GPS | GPX 处理 | 裁剪/合并/拆分 GPX 文件 | ✅ 已完成 |
 | 42 | 地理编码 | 地址编码 | 地理编码服务 | ✅ 已完成 |
+| 43 | 几何处理 | 对称差 | 几何处理 | ✅ 已完成 |
+| 44 | 几何处理 | 按属性融合 | 按属性合并 | ✅ 已完成 |
+| 45 | 几何处理 | 多部件转单部件 | 多重几何转单部件 | ✅ 已完成 |
+| 46 | 几何处理 | 单部件转多部件 | 单部件转多重几何 | ✅ 已完成 |
+| 47 | 几何处理 | 提取顶点 | 节点/点提取 | ✅ 已完成 |
+| 48 | 几何处理 | 面转线 | 多边形转线 | ✅ 已完成 |
+| 49 | 几何处理 | 线转面 | 线转多边形 | ✅ 已完成 |
+| 50 | 格式转换 | 批量格式转换 | 矢量格式转换（批量） | ✅ 已完成 |
 
 ### 使用方法
 
