@@ -133,6 +133,12 @@ public static class ToolRegistry
         // ── Raster tools ──
         tools.Add(new RasterFormatConvertTool().ToToolInfo());
         tools.Add(new RasterCalculatorTool().ToToolInfo());
+        tools.Add(new DemTerrainTool().ToToolInfo());
+        tools.Add(new ContourTool().ToToolInfo());
+        tools.Add(new RasterWarpTool().ToToolInfo());
+        tools.Add(new RasterClipTool().ToToolInfo());
+        tools.Add(new RasterMosaicTool().ToToolInfo());
+        tools.Add(new ZonalStatisticsTool().ToToolInfo());
 
         // ── Remote Sensing tools ──
         tools.Add(new SatelliteDownloadTool().ToToolInfo());

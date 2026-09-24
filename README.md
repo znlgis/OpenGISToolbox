@@ -20,7 +20,7 @@ The application uses [OpenGIS.Utils](https://github.com/znlgis/opengis-utils-for
 - ✅ **Geometry Validation**: Check geometry validity with detailed error reporting
 - 🌐 **Coordinate Transformation**: Reproject coordinates between different coordinate reference systems, with batch reprojection support
 - 📏 **Spatial Analysis**: Calculate area and length, Spatial Filter, Attribute Query, Extract by Location, Nearest Neighbor join, Count Points in Polygon, and Create Grid (fishnet)
-- 🗺️ **Raster Processing**: Raster format conversion and raster calculator (NDVI, Scale, Offset, Threshold)
+- 🗺️ **Raster Processing**: Raster format conversion, raster calculator (NDVI, Scale, Offset, Threshold), DEM terrain analysis (slope/aspect/hillshade), contour extraction, reproject/clip/mosaic, and zonal statistics
 - 🛰️ **Remote Sensing**: Download satellite imagery tiles from public tile services
 - 📍 **GPS Tools**: GPX file processing (extract waypoints/tracks, GPX summary)
 - 🏠 **Geocoding**: Geocode addresses to coordinates using OpenStreetMap Nominatim
@@ -90,7 +90,7 @@ OpenGISToolbox/
 
 The following table shows the mapping between NextGIS Toolbox features and the current implementation status.
 
-#### ✅ Implemented Tools (54 tools)
+#### ✅ Implemented Tools (60 tools)
 
 | # | Category | Tool | NextGIS Equivalent | Status |
 |---|----------|------|--------------------|--------|
@@ -148,6 +148,12 @@ The following table shows the mapping between NextGIS Toolbox features and the c
 | 52 | Analysis | Nearest Neighbor | Nearest neighbour join / distance | ✅ Done |
 | 53 | Analysis | Count Points in Polygon | Count points in polygon | ✅ Done |
 | 54 | Analysis | Create Grid (fishnet) | Create grid / fishnet | ✅ Done |
+| 55 | Raster | DEM Terrain Analysis | Slope / aspect / hillshade | ✅ Done |
+| 56 | Raster | Contour Extraction | Contour / DEM to vector | ✅ Done |
+| 57 | Raster | Raster Reproject (Warp) | Raster reprojection | ✅ Done |
+| 58 | Raster | Raster Clip (by extent) | Raster clipping | ✅ Done |
+| 59 | Raster | Raster Mosaic | Raster mosaic | ✅ Done |
+| 60 | Raster | Zonal Statistics | Zonal statistics of raster | ✅ Done |
 
 ### How It Works
 
@@ -190,7 +196,7 @@ Contributions are welcome! To add a new tool:
 - ✅ **几何验证**：检查几何有效性并提供详细错误报告
 - 🌐 **坐标转换**：在不同坐标参考系之间重投影坐标，支持批量重投影
 - 📏 **空间分析**：计算几何对象的面积和长度、空间过滤、属性查询、按位置提取、最近邻连接、点在多边形计数以及创建渔网网格
-- 🗺️ **栅格处理**：栅格格式转换和栅格计算器（NDVI、缩放、偏移、阈值）
+- 🗺️ **栅格处理**：栅格格式转换、栅格计算器（NDVI、缩放、偏移、阈值）、DEM 地形分析（坡度/坡向/山体阴影）、等高线提取、栅格重投影/裁剪/镶嵌以及分区统计
 - 🛰️ **遥感**：从公共瓦片服务下载卫星影像
 - 📍 **GPS 工具**：GPX 文件处理（提取航点/轨迹、GPX 摘要）
 - 🏠 **地理编码**：使用 OpenStreetMap Nominatim 将地址编码为坐标
@@ -260,7 +266,7 @@ OpenGISToolbox/
 
 下表展示了 NextGIS Toolbox 功能与当前实现状态的对应关系。
 
-#### ✅ 已实现工具（54个）
+#### ✅ 已实现工具（60个）
 
 | # | 类别 | 工具 | NextGIS 对应功能 | 状态 |
 |---|------|------|-----------------|------|
@@ -318,6 +324,12 @@ OpenGISToolbox/
 | 52 | 空间分析 | 最近邻连接 | 最近邻/距离 | ✅ 已完成 |
 | 53 | 空间分析 | 点在多边形计数 | 统计多边形内的点 | ✅ 已完成 |
 | 54 | 空间分析 | 创建渔网网格 | 创建网格/渔网 | ✅ 已完成 |
+| 55 | 栅格处理 | DEM 地形分析 | 坡度/坡向/山体阴影 | ✅ 已完成 |
+| 56 | 栅格处理 | 等高线提取 | 等高线/DEM 转矢量 | ✅ 已完成 |
+| 57 | 栅格处理 | 栅格重投影 | 栅格重投影 | ✅ 已完成 |
+| 58 | 栅格处理 | 栅格裁剪 | 栅格裁剪 | ✅ 已完成 |
+| 59 | 栅格处理 | 栅格镶嵌 | 栅格镶嵌 | ✅ 已完成 |
+| 60 | 栅格处理 | 分区统计 | 栅格分区统计 | ✅ 已完成 |
 
 ### 使用方法
 

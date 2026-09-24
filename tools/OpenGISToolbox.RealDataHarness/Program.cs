@@ -52,6 +52,7 @@ public static class Program
         await Sections.ErrorMatrix.Run();
         await Sections.Sprint1.Run();
         await Sections.Sprint2.Run();
+        await Sections.Sprint3.Run();
 
         Checks.PrintSummary();
         return Checks.ExitCode;

@@ -183,6 +183,70 @@ public static class Synth
         return buf;
     }
 
+    /// <summary>GeoTIFF band dimensions + a single band read, for warp/clip/mosaic checks.</summary>
+    public static (int Width, int Height, double[] Values, double[] GeoTransform) ReadRaster(string path, int band = 1)
+    {
+        GdalEnv.Ensure();
+        using var ds = OSGeo.GDAL.Gdal.Open(path, OSGeo.GDAL.Access.GA_ReadOnly);
+        var w = ds.RasterXSize;
+        var h = ds.RasterYSize;
+        var gt = new double[6];
+        ds.GetGeoTransform(gt);
+        var buf = new double[w * h];
+        ds.GetRasterBand(band).ReadRaster(0, 0, w, h, buf, w, h, 0, 0);
+        return (w, h, buf, gt);
+    }
+
+    private static OSGeo.GDAL.Dataset CreateSingleBandTiff(string path, int width, int height)
+    {
+        if (File.Exists(path)) File.Delete(path);
+        var driver = OSGeo.GDAL.Gdal.GetDriverByName("GTiff")
+                     ?? throw new InvalidOperationException("GTiff driver missing");
+        return driver.Create(path, width, height, 1, OSGeo.GDAL.DataType.GDT_Float64, null);
+    }
+
+    /// <summary>Linear DEM ramp (elevation = column index), north-up, pixel size 1.</summary>
+    public static string MakePlanarDem(string dir, string name = "dem.tif", int width = 10, int height = 5, int epsg = 0)
+    {
+        GdalEnv.Ensure();
+        var path = Path.Combine(dir, name);
+        using var ds = CreateSingleBandTiff(path, width, height);
+        var data = new double[width * height];
+        for (var r = 0; r < height; r++)
+            for (var c = 0; c < width; c++)
+                data[r * width + c] = c;
+        ds.GetRasterBand(1).WriteRaster(0, 0, width, height, data, width, height, 0, 0);
+        ds.SetGeoTransform(new double[] { 0, 1, 0, 0, 0, -1 });
+        if (epsg > 0) SetEpsg(ds, epsg);
+        ds.FlushCache();
+        return path;
+    }
+
+    /// <summary>Constant-value single-band GeoTIFF with a north-up pixel-size-1 geotransform.</summary>
+    public static string MakeConstantRaster(string dir, string name = "const.tif", int width = 4, int height = 4,
+        double value = 7, double originX = 0, double originY = 0, int epsg = 0)
+    {
+        GdalEnv.Ensure();
+        var path = Path.Combine(dir, name);
+        using var ds = CreateSingleBandTiff(path, width, height);
+        var data = new double[width * height];
+        for (var i = 0; i < data.Length; i++) data[i] = value;
+        ds.GetRasterBand(1).WriteRaster(0, 0, width, height, data, width, height, 0, 0);
+        ds.SetGeoTransform(new double[] { originX, 1, 0, originY, 0, -1 });
+        if (epsg > 0) SetEpsg(ds, epsg);
+        ds.FlushCache();
+        return path;
+    }
+
+    private static void SetEpsg(OSGeo.GDAL.Dataset ds, int epsg)
+    {
+        var srs = new OSGeo.OSR.SpatialReference(null);
+        srs.ImportFromEPSG(epsg);
+        srs.ExportToWkt(out string wkt, null);
+        ds.SetProjection(wkt);
+        srs.Dispose();
+    }
+
     public static string MakeGpx(string dir, string name = "track.gpx", int waypoints = 3, int trackPoints = 5)
     {
         var path = Path.Combine(dir, name);
