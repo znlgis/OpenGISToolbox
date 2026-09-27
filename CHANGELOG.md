@@ -8,11 +8,12 @@
 - CSV→矢量（`CsvToVectorTool`）四类解析缺陷：Tab 分隔符被空白判定回退为逗号；引号包裹字段（内嵌分隔符、`""` 转义、跨行）无解析；无编码探测（GBK 源按 UTF-8 读出乱码）；重复表头时坐标列错误取最后一列致全行跳过。现支持实际 Tab/字面 `\t`/分号等分隔符、RFC 4180 引号语义、BOM/UTF-8/GBK 探测与首次匹配表头。
 
 ### Changed 变更
-- 升级 `OpenGIS.Utils` 1.0.8 → 1.1.0：含 KML DATE/DATETIME 列降级（含日期图层转 KML 不再整层失败）、空几何跳过、DXF 固定 schema 字段索引、PostgreSQL MULTI 提升等引擎修复，全量回归通过。
+- 升级 `OpenGIS.Utils` 1.0.8 → 1.1.0 → 1.1.1：获得 KML DATE/DATETIME 列降级（含日期图层转 KML 不再整层失败）、KML 字段值对齐与字段名保真（ExtendedData）、零基 FID 保真（GPKG/OpenFileGDB）、PostgreSQL numeric 宽度、复合几何顶点数等引擎修复，全量回归通过。
 
 ### Engineering 工程
 - 新增 3 个测试类（`run-tests.sh` 类列表 14 → 17）：`CsvBoundaryTests`（14 用例，CSV 解析边界）、`BoundaryFieldTests`（6 用例，日期/Unicode/中文路径边界）、`ScaleEdgeTests`（8 用例，12000 点集与几何边界）。
-- 全面真实数据回归：xUnit 118 用例全通过；控制台 harness 257 项检查 0 Fail（1 项网络环境性 Warn）。测试报告见 `docs/测试报告-2026-09-26.md`。
+- 全面真实数据回归（`OpenGIS.Utils` 1.1.1）：xUnit 118 用例全通过；控制台 harness 257 项检查 0 Fail（1 项网络环境性 Warn）。测试报告见 `docs/测试报告-2026-09-26.md`。
+- KML 断言随 1.1.1 字段对齐修复收紧：`ConversionTests` 恢复字段名保真断言，`BoundaryFieldTests` 对日期字段逐值校验。
 
 ## [1.1.0] - 2026-09-24
 

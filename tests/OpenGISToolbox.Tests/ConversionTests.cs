@@ -17,12 +17,13 @@ public class ConversionTests : IDisposable
         new[]
         {
             // (output file, field under which the source `label` values land)
-            // KML has no generic attribute bag: GDAL's KML driver maps the schema
-            // fields onto <name>/<description>, so `label` values come back under
-            // `description`. Values — not key names — are the fidelity guarantee.
+            // Engine 1.1.1 maps KML fields through the actual layer field indices
+            // (driver built-ins included), so schema fields keep their own names and
+            // ExtendedData values: `label` values come back under `label` for every
+            // format — key names and values are both part of the fidelity guarantee.
             new object[] { "out.geojson", "label" },
             new object[] { "out.gpkg", "label" },
-            new object[] { "out.kml", "description" },
+            new object[] { "out.kml", "label" },
         };
 
     [Theory]

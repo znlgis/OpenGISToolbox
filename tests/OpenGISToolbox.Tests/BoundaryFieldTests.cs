@@ -176,23 +176,29 @@ public class BoundaryFieldTests : IDisposable
     // ─── 2. 日期字段：KML（1.1.0 引擎降级 ISO 文本后应整层成功） ───
 
     [Fact]
-    public async Task DateFields_Kml_Conversion_Succeeds()
+    public async Task DateFields_Kml_Conversion_Succeeds_With_Iso_Values()
     {
-        // 1.0.8 下含 DATE 列的图层转 KML 整层失败（"Export of geometry to KML failed"）；
-        // 1.1.0 引擎将 DATE/DATETIME 降级为文本列后转换应成功。
-        // 注：KML 驱动字段值对齐缺陷（值整体错位两格）在 1.1.0 中仍存在（修复已在引擎源码就绪、待发布），
-        // 因此这里验证"整层成功 + 日期列降级为 string"，值保真由 GeoJSON/GPKG 用例覆盖。
+        // 1.0.8：含 DATE 列的图层转 KML 整层失败（"Export of geometry to KML failed"）；
+        // 1.1.0：日期列降级为文本列后转换成功，但驱动内建字段未计入索引映射、值整体错位；
+        // 1.1.1：字段映射修正后，日期列降级为 string 且各字段值对齐，可严格断言。
         var src = MakeDateFieldsShp();
         var kml = Path.Combine(_dir, "dates.kml");
         await ConvertAsync(src, kml, DataFormatType.KML);
 
         var layer = TestEnv.ReadLayer(kml);
         Assert.Equal(6, layer.GetFeatureCount());
+        var byLabel = ByLabel(layer);
+        Assert.Equal("2024-01-15", IsoDate(byLabel["normal"].GetValue("d_std")));
+        Assert.Equal("2024-02-29", IsoDate(byLabel["normal"].GetValue("d_leap")));
+        Assert.Equal("2000-02-29", IsoDate(byLabel["leap-2000"].GetValue("d_std")));
+        Assert.Equal("9999-12-31", IsoDate(byLabel["max-date"].GetValue("d_std")));
+        Assert.Equal("2024-06-15", IsoDate(byLabel["same"].GetValue("d_null")));
+        Assert.Null(IsoDate(byLabel["all-null"].GetValue("d_std")));
+        // 注：KML 的 Placemark id（"<图层>.<FID>"）读回时会占用名为 "id" 的字段，
+        // 与源数据同名字段的冲突属 KML 格式特性，故此处不对 id 列做断言。
 
         var text = File.ReadAllText(kml);
         Assert.Contains("SimpleField name=\"d_std\" type=\"string\"", text);
-        Assert.Contains("SimpleField name=\"d_leap\" type=\"string\"", text);
-        Assert.Contains("SimpleField name=\"d_null\" type=\"string\"", text);
     }
 
     // ─── 3. 日期字段：属性查询 ───
