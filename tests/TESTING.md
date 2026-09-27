@@ -53,14 +53,18 @@ dotnet test tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj \
 | `DxfFilegdbToolTests` | **此前无覆盖的工具**：SHP→DXF（含属性+多部件拆分）、真实国家层→DXF、FileGDB 往返（驱动能力探测）、CentralLines、SpatialJoin 全目标保留 |
 | `PostgisRoundTripTests` | **PostGIS 往返**：导出→SQL 侧计数/FID 集合校验→导回→文件头计数+几何指纹；缺 PG 自动跳过 |
 | `NetworkToolTests` | **联网工具**：卫星瓦片下载并校验 PNG/JPEG 魔数、Nominatim 地理编码坐标解析、空输入优雅失败；`OGT_SKIP_NETWORK=1` 跳过 |
+| `CsvBoundaryTests` | **CSV 解析边界**：引号/逗号/转义/跨行、Tab/分号分隔符、GBK 编码探测、BOM、重复表头、CRLF/空行/科学计数法/畸形行 |
+| `BoundaryFieldTests` | **日期与 Unicode 边界**：日期字段（闰日/极值/空值）GeoJSON/GPKG/KML 转换与查询；中文/emoji 属性保真、中文 WHERE、中文路径输入输出 |
+| `ScaleEdgeTests` | **万级与几何边界**：12000 点计数守恒与最近邻暴力验证、空间连接、网格派生；带洞面积、无效几何检查修复、多部件、空几何跳过、空图层 |
 
-合成数据由 `TestEnv`/`Synth` 在运行时生成（临时目录，已知数值），真实数据由 `RealDataCatalog` 解析（`OGT_REAL_DATA_DIR` 或 Natural Earth 缓存），均无需人工准备。
+合成数据由 `TestEnv`/`Synth` 在运行时生成（临时目录，已知数值），真实数据由 `RealDataCatalog` 解析（`OGT_REAL_DATA_DIR` 或 Natural Earth 缓存），均无需人工准备。边界测试（`CsvBoundaryTests`/`BoundaryFieldTests`/`ScaleEdgeTests`）同样运行时生成固定种子数据（CSV/日期/Unicode/万级/几何边界），无外部数据依赖。
 
 ## 测试中发现并已处置的缺陷
 
-### 依赖层（引擎）—— 通过升级 `OpenGIS.Utils` 1.0.1 → 1.0.8 修复
+### 依赖层（引擎）—— 通过升级 `OpenGIS.Utils` 修复
 1. **DXF 写入把属性字段按序数映射到固定 schema 的错误内建列**，导致 SHP→DXF 全部要素写入失败。引擎已在 v1.0.5+ 修复固定 schema 驱动的字段创建跳过逻辑；旧版 `fieldIndexMap` 又按序数赋值造成属性错位。升级到 1.0.8 解决。
 2. **FileGDB 驱动探测**：1.0.1 的写入探测在装有旧 FileGDB 映射时误判；1.0.5+ 优先用 `OpenFileGDB` 创建，往返可用。
+3. **含 DATE/DATETIME 字段的图层转 KML 整层失败**：GDAL 3.13 原生 KML writer 对 `OFTDate` 列逐要素 `CreateFeature` 失败。引擎 1.1.0 将 KML 日期列降级为 ISO 文本。升级到 1.1.0 解决（`BoundaryFieldTests` 阳性覆盖）。
 
 ### 应用层（本仓库，已在源码修复并由回归覆盖）
 3. **必填参数缺省值未生效（headless 场景）**：`ToolBase.GetRequired/GetRequiredDouble/GetRequiredInt` 改为在缺参时回退到参数声明的 `DefaultValue`（UI 本就预填），使 CLI/harness/API 与 UI 行为一致；无缺省值的必填参数仍严格报错。
@@ -69,20 +73,23 @@ dotnet test tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj \
 6. **SHP→PostGIS 数值字段溢出**：DBF 派生的 DOUBLE 字段带宽度/精度（如 `24,15`），映射成 `numeric(24,15)`（整数位仅 9 位），普通人口计数 `1.3e9` 即「numeric field overflow」致 COPY 中断。`PrepareLayerForPostgis` 将 DOUBLE/FLOAT 字段**保型扩位**（整数位补足到 ≥15 位，`numeric(30,15)`）。注：曾用「清空宽高→float8」方案，但在渠道真实数据上实测 float8 列会触发 GDAL PG 驱动 COPY 中途失败回退逐行插入、服务端行序重排（FID 保真 68 处乱序），故改回保留 numeric 类型。
 7. **SHP→DXF 多部件几何无法存储**：DXF 实体 schema 不支持多重几何，世界国家面图层全部写入失败。`FormatConversionTool.ExplodeForDxf` 将多重几何拆为单部件要素（几何与 FID 保留），并**不携带属性**（DXF 固定 schema 下属性映射会错位，见上第 1 条）。注意：仅拆 `MULTI*` 容器，不迭代单一 `POLYGON` 的内环（内环是 `LINESTRING`，会被 DXF 面图层拒绝——该坑由单测 `ShpToDxf_WithAttributesAndMultipart...` 以双部件 `POLYGON` 覆盖）。
 
-### 引擎层根因修复状态（opengis-utils-for-net 已修，待发版 ≥1.0.9）
+### 引擎层根因修复状态（opengis-utils-for-net）
 
-以下缺陷根因在引擎，已在 `opengis-utils-for-net` 仓库修复并有回归测试（266 xunit + 真实数据 harness 284 项 0 Fail）；本仓库的应用层 workaround 为兼容 NuGet 1.0.8 而保留，引擎升版发布并升级依赖后可精简：
+原「待发版」各项（空几何跳过、DXF 字段索引、PostgreSQL MULTI 提升、KML 日期降级）已随 **1.1.0 发布**并完成依赖升级；应用层 workaround（`WriteLayerSafe` / `ExplodeForDxf` 剥离属性 / `PrepareLayerForPostgis` 升维包裹）继续作为防御性逻辑保留，可后续评估精简。
 
-| 引擎修复 | 对应本仓库 workaround |
+2026-09 下旬边界测试新发现并已在引擎仓库修复（提交 `928edeb`）、**待发版后升级解除**：
+
+| 引擎修复 | 缺陷现象 |
 |---|---|
-| 空几何要素改为跳过+告警，不再整层抛异常 | `ToolBase.WriteLayerSafe` |
-| 固定 schema 驱动（DXF）字段索引按实际创建序列映射，属性不再污染内建列 | `ExplodeForDxf` 剥离属性 |
-| PostgreSQL 列类型自动 MULTI 提升 + 单部件 WKT 包裹 | `PrepareLayerForPostgis` 升维包裹 |
-| KML 的 DATE/DATETIME 列降级 ISO 文本（GDAL 3.13 原生 KML writer 对 OFTDate 全要素失败）| 暂无——含日期图层转 KML 在 1.0.8 下仍整层失败，属已知限制 |
+| KML 属性值映射叠加驱动内建字段基偏移 | 多字段图层写 KML 时值整体错位两格、源 `Name` 产生重复 `<name>` |
+| 零基 FID 保真（GPKG 保留 / OpenFileGDB 延迟 Fid=0 至末尾） | `Fid=0` 触发链式 UNIQUE 冲突与 FID 整体偏移 |
+| PostgreSQL DOUBLE/FLOAT 跳过宽度/精度 | DBF 派生 `numeric(24,15)` 对 `10^9` 级值 COPY 溢出 |
+| `GeometryUtil.NumPoints` 复合几何递归 | MULTI\* 几何顶点数误报 0 |
 
 ### 已知限制（未改，已在测试中标注/绕过）
 - **KML 属性名不保真（1.0.8 行为）**：GDAL KML 驱动无通用属性袋，写侧把 schema 字段映射进 `<name>`/`<description>`，读回后源字段 `label` 的值落在 `description` 字段（值不丢、键名变）。`ConversionTests` 对 KML 断言"值保真"而非"字段名保真"；GeoJSON/GPKG 仍严格校验字段名。注：1.0.1 时代 ExtendedData 曾保留原键名，升级 1.0.8 后为 GDAL 新版驱动行为。
-- **含 DATE/DATETIME 字段的图层转 KML 整层失败（NuGet 1.0.8）**：GDAL 3.13 原生 KML writer 对 OFTDate 列逐要素 CreateFeature 报「Export of geometry to KML failed」。引擎侧已修复（日期降级 ISO 文本，见上表），待发布后升级依赖即解除。
+- ~~**含 DATE/DATETIME 字段的图层转 KML 整层失败（NuGet 1.0.8）**~~ —— **已解除（2026-09-28）**：引擎 1.1.0 将日期列降级 ISO 文本，本仓库已升级依赖；`BoundaryFieldTests` 阳性覆盖「转换成功 + 日期列降级为 string」。
+- **KML 字段值对齐缺陷（1.1.0 仍可见）**：多字段图层写 KML 时属性值整体错位两格（驱动内建 `Name`/`Description` 未计入索引映射），源 `Name` 字段输出重复 `<name>`。修复已在引擎仓库入库（`928edeb`）待发版；当前 `BoundaryFieldTests` 对该场景只断言「整层成功 + 日期降级」，值保真由 GeoJSON/GPKG 用例严格覆盖。
 - **GeoJSON 输出不保留 EPSG**：`ReprojectTool` 坐标转换正确，但 GeoJSON 写出不带 CRS（RFC 7946 强制 WGS84，且 `OpenGIS.Utils` 不暴露该选项）。需保 CRS 请用 GeoPackage/Shapefile，或改写带 `crs` 成员的 GeoJSON。
 - **BatchReproject 的 `format` 同时决定输入匹配后缀**：传 `GeoJSON` 只处理 `*.geojson`。语义如此。
 - **UTM/带投影的目标 CRS 对全球范围数据会「full reprojection failed」**：如国家层转 EPSG:32650 超范围；harness 批投影改用 EPSG:3857（全球可表示）。这是数据/CRS 匹配问题，非工具缺陷。
@@ -90,7 +97,7 @@ dotnet test tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj \
 
 ## 控制台 harness 覆盖分区
 
-`tools/OpenGISToolbox.RealDataHarness` 对 ToolRegistry 全部注册工具做数据驱动遍历（当前约 185 项，0 Fail / 合理 Warn）：
+`tools/OpenGISToolbox.RealDataHarness` 对 ToolRegistry 全部注册工具做数据驱动遍历（当前 257 项：256 Pass / 1 Warn / 0 Fail）：
 
 1. 真实数据锚点完整性（三方计数 + 类型一致）
 2. 格式转换遍历（GeoJSON/GPKG/KML/DXF/FileGDB 往返）
@@ -101,5 +108,6 @@ dotnet test tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj \
 7. 栅格/GPS/CSV/ZIP（合成数据，数值精确断言）
 8. 联网工具（Nominatim、OSM 瓦片；`OGT_SKIP_NETWORK=1` 可跳过）
 9. 异常/健壮性矩阵（所有注册工具的空参、坏文件、非法 EPSG/数字/SQL 优雅失败）
+10. Sprint-1～4 专项遍历（几何补全 / 空间分析 / 栅格专题 / 三角网）
 
 > 注：harness 与 xUnit 共用 `OpenGISToolbox.TestKit` 的解析与比对逻辑，二者期望值来源一致（文件头/Npgsql 独立于被测 GDAL），互为冗余校验。

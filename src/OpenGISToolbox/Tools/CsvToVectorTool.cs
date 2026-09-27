@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using OpenGIS.Utils.DataSource;
 using OpenGIS.Utils.Engine.Enums;
 using OpenGIS.Utils.Engine.Model.Layer;
+using OpenGIS.Utils.Utils;
 using OpenGISToolbox.Models;
 
 namespace OpenGISToolbox.Tools;
@@ -100,26 +102,33 @@ public class CsvToVectorTool : ToolBase
         var outputPath = GetRequired(parameters, "output");
         var xField = GetRequired(parameters, "xField");
         var yField = GetRequired(parameters, "yField");
-        var delimiter = GetOptional(parameters, "delimiter", ",");
+        // Not GetOptional: IsNullOrWhiteSpace would treat a Tab delimiter as "empty"
+        // and silently fall back to the default comma.
+        var delimiter = parameters.TryGetValue("delimiter", out var rawDelimiter) && !string.IsNullOrEmpty(rawDelimiter)
+            ? rawDelimiter
+            : ",";
         var wkid = GetRequiredInt(parameters, "wkid");
 
         progress?.Report(L("Reading CSV file...", "读取CSV文件..."));
 
-        var lines = await Task.Run(() => File.ReadAllLines(inputPath), ct);
-        if (lines.Length < 2)
+        var delimChar = ResolveDelimiter(delimiter);
+        var rows = await Task.Run(() =>
+        {
+            var encoding = EncodingUtil.GetFileEncoding(inputPath);
+            return ParseCsv(File.ReadAllText(inputPath, encoding), delimChar);
+        }, ct);
+        if (rows.Count < 2)
             throw new ArgumentException(L("CSV file must have a header row and at least one data row.", "CSV文件必须包含表头行和至少一行数据。"));
 
-        // Parse header
-        var delimChar = delimiter == "\\t" ? '\t' : delimiter[0];
-        var headers = lines[0].Split(delimChar);
+        // Parse header. First occurrence wins for duplicate column names.
+        var headers = Array.ConvertAll(rows[0], h => h.Trim());
 
         int xIndex = -1, yIndex = -1;
         for (int i = 0; i < headers.Length; i++)
         {
-            var h = headers[i].Trim();
-            if (string.Equals(h, xField, StringComparison.OrdinalIgnoreCase))
+            if (xIndex < 0 && string.Equals(headers[i], xField, StringComparison.OrdinalIgnoreCase))
                 xIndex = i;
-            else if (string.Equals(h, yField, StringComparison.OrdinalIgnoreCase))
+            if (yIndex < 0 && string.Equals(headers[i], yField, StringComparison.OrdinalIgnoreCase))
                 yIndex = i;
         }
 
@@ -153,14 +162,11 @@ public class CsvToVectorTool : ToolBase
         int fid = 0;
         int skipped = 0;
 
-        for (int row = 1; row < lines.Length; row++)
+        for (int row = 1; row < rows.Count; row++)
         {
             ct.ThrowIfCancellationRequested();
 
-            var line = lines[row];
-            if (string.IsNullOrWhiteSpace(line)) continue;
-
-            var values = line.Split(delimChar);
+            var values = rows[row];
             if (values.Length <= Math.Max(xIndex, yIndex)) continue;
 
             if (!double.TryParse(values[xIndex].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ||
@@ -202,5 +208,94 @@ public class CsvToVectorTool : ToolBase
             Message = message,
             OutputPath = outputPath
         };
+    }
+
+    /// <summary>Normalizes the delimiter parameter: accepts a literal character or the escaped "\t" form.</summary>
+    private static char ResolveDelimiter(string? delimiter)
+    {
+        if (string.IsNullOrEmpty(delimiter)) return ',';
+        if (delimiter is "\\t" or "\t") return '\t';
+        return delimiter[0];
+    }
+
+    /// <summary>
+    /// Parses CSV text (RFC 4180 style): quoted fields may contain the delimiter,
+    /// escaped "" quotes and line breaks; CRLF/LF/CR line endings and blank lines are handled.
+    /// </summary>
+    private static List<string[]> ParseCsv(string text, char delimiter)
+    {
+        var rows = new List<string[]>();
+        var fields = new List<string>();
+        var field = new StringBuilder();
+        var inQuotes = false;
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+
+            if (inQuotes)
+            {
+                if (c == '"')
+                {
+                    if (i + 1 < text.Length && text[i + 1] == '"')
+                    {
+                        field.Append('"'); // escaped "" quote
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = false;
+                    }
+                }
+                else
+                {
+                    field.Append(c);
+                }
+                continue;
+            }
+
+            if (c == '"')
+            {
+                inQuotes = true;
+            }
+            else if (c == delimiter)
+            {
+                fields.Add(field.ToString());
+                field.Clear();
+            }
+            else if (c == '\r' || c == '\n')
+            {
+                if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
+                    i++; // treat CRLF as a single line break
+
+                fields.Add(field.ToString());
+                field.Clear();
+
+                // Skip blank lines: a single whitespace-only field means no delimiter was present.
+                if (fields.Count == 1 && string.IsNullOrWhiteSpace(fields[0]))
+                {
+                    fields.Clear();
+                }
+                else
+                {
+                    rows.Add(fields.ToArray());
+                    fields.Clear();
+                }
+            }
+            else
+            {
+                field.Append(c);
+            }
+        }
+
+        // Last line without a trailing line break.
+        if (fields.Count > 0 || field.Length > 0)
+        {
+            fields.Add(field.ToString());
+            if (!(fields.Count == 1 && string.IsNullOrWhiteSpace(fields[0])))
+                rows.Add(fields.ToArray());
+        }
+
+        return rows;
     }
 }

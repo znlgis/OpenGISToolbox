@@ -29,6 +29,9 @@ classes=(
   Sprint2ToolTests
   Sprint3ToolTests
   Sprint4ToolTests
+  CsvBoundaryTests
+  BoundaryFieldTests
+  ScaleEdgeTests
 )
 PROJECT=tests/OpenGISToolbox.Tests/OpenGISToolbox.Tests.csproj
 FAILED=0
